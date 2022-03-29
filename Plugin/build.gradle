@@ -1,0 +1,24 @@
+compileJava {
+    options.compilerArgs += ['-parameters']
+    options.fork = true
+    options.forkOptions.executable = 'javac'
+    options.encoding = 'UTF-8'
+}
+
+dependencies {
+    // Other modules
+    implementation project(':NMS:Wrapper')
+
+    compileOnly 'org.spigotmc:spigot-api:1.18-R0.1-SNAPSHOT'
+    compileOnly 'me.clip:placeholderapi:2.10.9'
+    compileOnly 'org.jetbrains:annotations:23.0.0'
+    compileOnly 'com.github.MilkBowl:VaultAPI:1.7'
+
+    // Frameworks & MySQL APIs
+    implementation 'dev.rosewood:rosegarden:1.1.0.29-SNAPSHOT'
+    implementation 'xyz.oribuin:ori-gui:1.0.11'
+}
+
+shadowJar {
+    archiveClassifier.set(null)
+}

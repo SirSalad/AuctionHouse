@@ -4,6 +4,9 @@ import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.manager.Manager;
 import dev.rosewood.rosegarden.utils.NMSUtil;
 import xyz.oribuin.auctionhouse.hook.VaultHook;
+import xyz.oribuin.auctionhouse.manager.ConfigurationManager;
+import xyz.oribuin.auctionhouse.manager.DataManager;
+import xyz.oribuin.auctionhouse.manager.LocaleManager;
 
 import java.util.List;
 
@@ -12,16 +15,16 @@ public class AuctionHousePlugin extends RosePlugin {
     private static AuctionHousePlugin instance;
 
     public AuctionHousePlugin() {
-        super(0, 0, null, null, null, null);
+        super(-1, -1, ConfigurationManager.class, DataManager.class, LocaleManager.class, null);
     }
 
     @Override
     protected void enable() {
         instance = this;
 
-        // Check if the server is on 1.16 or higher
-        if (NMSUtil.getVersionNumber() < 16) {
-            this.getLogger().severe("This plugin requires 1.16 or higher, Disabling plugin!");
+        // Check if the server is on 1.17 or higher
+        if (NMSUtil.getVersionNumber() < 17) {
+            this.getLogger().severe("This plugin requires 1.17 or higher, Disabling plugin!");
             this.getServer().getPluginManager().disablePlugin(this);
             return;
         }
