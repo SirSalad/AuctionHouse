@@ -8,6 +8,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import xyz.oribuin.auctionhouse.auction.Auction;
 import xyz.oribuin.auctionhouse.hook.VaultHook;
+import xyz.oribuin.auctionhouse.nms.NMSAdapter;
 import xyz.oribuin.auctionhouse.util.PluginUtils;
 
 import java.util.HashMap;
@@ -40,9 +41,9 @@ public class AuctionManager extends Manager {
     /**
      * Create a new auction with the given information
      *
-     * @param player    The player creating the auction
-     * @param item The item being auctioned
-     * @param price     The price of the item
+     * @param player The player creating the auction
+     * @param item   The item being auctioned
+     * @param price  The price of the item
      */
     public Optional<Auction> createAuction(Player player, ItemStack item, double price) {
         final LocaleManager locale = this.rosePlugin.getManager(LocaleManager.class);
@@ -84,11 +85,29 @@ public class AuctionManager extends Manager {
             return Optional.empty();
         }
 
-        // Check if the item is allowed to be sold
+        // Check if the item's material is allowed to be listed
+        if (ConfigurationManager.Settings.DISABLED_MATERIALS.getStringList().contains(item.getType().name())) {
+            locale.sendMessage(player, "command-create-disabled-item");
+            return Optional.empty();
+        }
+
+        // Check if the item's NBT is allowed to be listed
+        boolean hasDisabledNBT = ConfigurationManager.Settings.DISABLED_NBT.getStringList()
+                .stream()
+                .anyMatch(nbt -> NMSAdapter.getHandler().hasTag(item, nbt));
+
+        if (hasDisabledNBT) {
+            locale.sendMessage(player, "command-create-disabled-item");
+            return Optional.empty();
+        }
+
 
         Auction auction = this.data.createAuction(player.getUniqueId(), item, price);
+        if (listPrice > 0) {
+            VaultHook.getEconomy().withdrawPlayer(player, listPrice);
+        }
 
-        // TODO The rest of this method
+        locale.sendMessage(player, "command-create-success", StringPlaceholders.single("price", String.format("%.2f", price)));
         return auction == null ? Optional.empty() : Optional.of(auction);
     }
 

@@ -21,13 +21,14 @@ public class Auction {
     private boolean expired;
     private boolean sold;
     private long soldTime;
-
+    private double soldPrice;
 
     public Auction(int id, UUID seller, ItemStack item, double price) {
         this.id = id;
         this.seller = seller;
         this.item = item;
         this.price = price;
+        this.soldPrice = price;
     }
 
     public int getId() {

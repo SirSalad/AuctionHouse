@@ -4,6 +4,8 @@ import org.bukkit.inventory.ItemStack;
 
 public interface NMSHandler {
 
+    boolean hasTag(ItemStack item, String key);
+
     ItemStack setString(ItemStack item, String key, String value);
 
     ItemStack setInt(ItemStack item, String key, int value);
@@ -14,5 +16,4 @@ public interface NMSHandler {
 
     ItemStack setBoolean(ItemStack item, String key, boolean value);
 
-//    Entity updateEntity(Player player, Entity entity);
 }

@@ -48,4 +48,10 @@ public class NMSHandlerImpl implements NMSHandler {
         return CraftItemStack.asBukkitCopy(itemStack);
     }
 
+    @Override
+    public boolean hasTag(ItemStack item, String key) {
+        final net.minecraft.world.item.ItemStack itemStack = CraftItemStack.asNMSCopy(item);
+        CompoundTag tag = itemStack.getOrCreateTag();
+        return tag.contains(key);
+    }
 }

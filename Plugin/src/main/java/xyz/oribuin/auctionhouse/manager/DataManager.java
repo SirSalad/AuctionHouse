@@ -69,7 +69,6 @@ public class DataManager extends AbstractDataManager {
         final Auction auction = new Auction(-1, uuid, item, price);
         auction.setCreatedTime(System.currentTimeMillis());
 
-
         this.async(() -> this.databaseConnector.connect(connection -> {
             final String query = "INSERT INTO " + this.getTablePrefix() + "auctions (seller, item, price) VALUES (?, ?, ?)";
             try (var statement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
