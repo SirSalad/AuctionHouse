@@ -7,7 +7,7 @@ allprojects {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     group "xyz.oribuin"
-    version "1.0.0"
+    version "1.0"
 
     targetCompatibility = JavaVersion.VERSION_16
     sourceCompatibility = JavaVersion.VERSION_16
@@ -23,6 +23,7 @@ allprojects {
         maven { url "https://repo.codemc.org/repository/maven-public/" }
         maven { url "https://maven.enginehub.org/repo/" }
         maven { url 'https://jitpack.io' }
+        maven { url "https://repo.mattstudios.me/artifactory/public/" }
     }
 }
 

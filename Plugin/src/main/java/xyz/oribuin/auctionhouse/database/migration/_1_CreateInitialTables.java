@@ -19,16 +19,16 @@ public class _1_CreateInitialTables extends DataMigration {
 
         // Create the auction table
         String createAuctionTable = "CREATE TABLE " + tablePrefix + "auctions (" +
-                " id INTEGER PRIMARY KEY " + autoIncrement + ", " +
-                " seller VARCHAR(16) NOT NULL, " +
-                " item VARBINARY(2456) NOT NULL, " +
-                " price DOUBLE NOT NULL, " +
-                " buyer VARCHAR(36), " +
-                " createdTime LONG, " +
-                " expiredTime LONG, " +
-                " soldTime LONG, " +
-                " expired BOOLEAN, " +
-                "sold BOOLEAN)";
+                "id INTEGER PRIMARY KEY " + autoIncrement + ", " +
+                "seller VARCHAR(16) NOT NULL, " +
+                "item VARBINARY(2456) NOT NULL, " +
+                "price DOUBLE NOT NULL, " +
+                "buyer VARCHAR(36) NULL, " +
+                "createdTime LONG NULL, " +
+                "expiredTime LONG NULL, " +
+                "soldTime LONG NULL, " +
+                "expired BOOLEAN NULL, " +
+                "sold BOOLEAN NULL)";
 
         try (var statement = connection.prepareStatement(createAuctionTable)) {
             statement.executeUpdate();

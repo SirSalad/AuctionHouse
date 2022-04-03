@@ -15,13 +15,13 @@ public class Auction {
     private final UUID seller;
     private final ItemStack item;
     private final double price;
+    private double soldPrice;
     private UUID buyer;
     private long createdTime;
     private long expiredTime;
+    private long soldTime;
     private boolean expired;
     private boolean sold;
-    private long soldTime;
-    private double soldPrice;
 
     public Auction(int id, UUID seller, ItemStack item, double price) {
         this.id = id;
@@ -29,6 +29,12 @@ public class Auction {
         this.item = item;
         this.price = price;
         this.soldPrice = price;
+        this.buyer = null;
+        this.createdTime = System.currentTimeMillis();
+        this.expiredTime = 0L;
+        this.soldTime = 0L;
+        this.expired = false;
+        this.sold = false;
     }
 
     public int getId() {
@@ -97,5 +103,13 @@ public class Auction {
 
     public void setExpiredTime(long expiredTime) {
         this.expiredTime = expiredTime;
+    }
+
+    public double getSoldPrice() {
+        return soldPrice;
+    }
+
+    public void setSoldPrice(double soldPrice) {
+        this.soldPrice = soldPrice;
     }
 }

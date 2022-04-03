@@ -8,9 +8,12 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import xyz.oribuin.auctionhouse.auction.Auction;
 import xyz.oribuin.auctionhouse.hook.VaultHook;
+import xyz.oribuin.auctionhouse.manager.ConfigurationManager.Settings;
 import xyz.oribuin.auctionhouse.nms.NMSAdapter;
 import xyz.oribuin.auctionhouse.util.PluginUtils;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +33,7 @@ public class AuctionManager extends Manager {
     @Override
     public void reload() {
         this.data = this.rosePlugin.getManager(DataManager.class);
-        this.data.loadAuctions();
+//        this.data.loadAuctions();
     }
 
     @Override
@@ -45,70 +48,154 @@ public class AuctionManager extends Manager {
      * @param item   The item being auctioned
      * @param price  The price of the item
      */
-    public Optional<Auction> createAuction(Player player, ItemStack item, double price) {
+    public void createAuction(Player player, ItemStack item, double price) {
         final LocaleManager locale = this.rosePlugin.getManager(LocaleManager.class);
 
         // Check if the player has permission to create an auction
         int maxAuctions = this.getMaximumAuctions(player);
         int currentAuctions = this.getActiveAuctionsBySeller(player.getUniqueId()).size();
 
-        if (maxAuctions <= currentAuctions) {
+        if (currentAuctions >= maxAuctions) {
             final StringPlaceholders placeholders = StringPlaceholders.builder()
-                    .addPlaceholder("max_auctions", maxAuctions)
-                    .addPlaceholder("current_auctions", currentAuctions)
+                    .addPlaceholder("max", maxAuctions)
+                    .addPlaceholder("current", currentAuctions)
                     .build();
 
-            locale.sendMessage(player, "command-create-max-reached", placeholders);
-            return Optional.empty();
+            locale.sendMessage(player, "command-sell-max-reached", placeholders);
+            return;
         }
 
         // Check if the player has enough money to create an auction
-        double listPrice = ConfigurationManager.Settings.LIST_PRICE.getDouble();
+        double listPrice = Settings.LIST_PRICE.getDouble();
         double playerBalance = VaultHook.getEconomy().getBalance(player);
 
-        if (listPrice < playerBalance) {
+        if (listPrice > playerBalance) {
             locale.sendMessage(player, "invalid-funds", StringPlaceholders.builder().addPlaceholder("price", listPrice).build());
-            return Optional.empty();
+            return;
         }
 
         // Check if the price is in correct range
-        double minPrice = ConfigurationManager.Settings.LIST_MAX.getDouble();
-        double maxPrice = ConfigurationManager.Settings.LIST_MIN.getDouble();
+        double minPrice = Settings.LIST_MIN.getDouble();
+        double maxPrice = Settings.LIST_MAX.getDouble();
 
         if (price < minPrice || price > maxPrice) {
             final StringPlaceholders placeholders = StringPlaceholders.builder()
-                    .addPlaceholder("min_price", minPrice)
-                    .addPlaceholder("max_price", maxPrice)
+                    .addPlaceholder("min", minPrice)
+                    .addPlaceholder("max", maxPrice)
+                    .addPlaceholder("price", price)
                     .build();
 
-            locale.sendMessage(player, "command-create-invalid-price", placeholders);
-            return Optional.empty();
+            locale.sendMessage(player, "command-sell-invalid-price", placeholders);
+            return;
+        }
+
+        if (item.getType().isAir()) {
+            locale.sendMessage(player, "command-sell-disabled-item");
+            return;
         }
 
         // Check if the item's material is allowed to be listed
-        if (ConfigurationManager.Settings.DISABLED_MATERIALS.getStringList().contains(item.getType().name())) {
-            locale.sendMessage(player, "command-create-disabled-item");
-            return Optional.empty();
+        if (Settings.DISABLED_MATERIALS.getStringList().contains(item.getType().name())) {
+            locale.sendMessage(player, "command-sell-disabled-item");
+            return;
         }
 
         // Check if the item's NBT is allowed to be listed
-        boolean hasDisabledNBT = ConfigurationManager.Settings.DISABLED_NBT.getStringList()
+        boolean hasDisabledNBT = Settings.DISABLED_NBT.getStringList()
                 .stream()
                 .anyMatch(nbt -> NMSAdapter.getHandler().hasTag(item, nbt));
 
         if (hasDisabledNBT) {
-            locale.sendMessage(player, "command-create-disabled-item");
-            return Optional.empty();
+            locale.sendMessage(player, "command-sell-disabled-item");
+            return;
         }
 
+        // Remove the item and check if it has been removed
+        if (!player.getInventory().removeItem(item).isEmpty()) {
+            locale.sendMessage(player, "command-sell-no-item");
+            return;
+        }
 
-        Auction auction = this.data.createAuction(player.getUniqueId(), item, price);
+        this.data.createAuction(player.getUniqueId(), item, price);
         if (listPrice > 0) {
             VaultHook.getEconomy().withdrawPlayer(player, listPrice);
         }
 
-        locale.sendMessage(player, "command-create-success", StringPlaceholders.single("price", String.format("%.2f", price)));
-        return auction == null ? Optional.empty() : Optional.of(auction);
+        locale.sendMessage(player, "command-sell-success", StringPlaceholders.single("price", String.format("%.2f", price)));
+    }
+
+    /**
+     * Allow a player to buy an auction with the given information
+     *
+     * @param player    The player buying the auction
+     * @param auctionId The id of the auction being bought
+     */
+    public void buyAuction(Player player, int auctionId) {
+        final LocaleManager locale = this.rosePlugin.getManager(LocaleManager.class);
+
+        Optional<Auction> optionalAuction = this.getAuctionById(auctionId);
+        if (optionalAuction.isEmpty()) {
+            locale.sendMessage(player, "command-buy-auction-gone");
+            return;
+        }
+
+        final Auction auction = optionalAuction.get();
+
+        // Make sure the auction is has not been sold or expired
+        if (auction.isSold() || this.isAuctionExpired(auction)) {
+            locale.sendMessage(player, "auction-gone");
+            return;
+        }
+
+        // Check if the player has enough money to buy an auction
+        double buyPrice = auction.getPrice();
+        buyPrice = buyPrice - (buyPrice * Settings.LIST_TAX.getDouble());
+
+        double playerBalance = VaultHook.getEconomy().getBalance(player);
+
+        if (buyPrice > playerBalance) {
+            locale.sendMessage(player, "invalid-funds", StringPlaceholders.builder().addPlaceholder("price", String.format("%.2f", buyPrice)).build());
+            return;
+        }
+
+        // Remove the item and check if it has been removed
+        ItemStack item = auction.getItem();
+        if (!player.getInventory().addItem(item).isEmpty()) {
+            locale.sendMessage(player, "auction-buy-no-space");
+            return;
+        }
+
+        auction.setSoldTime(System.currentTimeMillis());
+        auction.setSold(true);
+        auction.setSoldPrice(buyPrice);
+        auction.setBuyer(player.getUniqueId());
+
+        this.data.saveAuction(auction);
+        VaultHook.getEconomy().withdrawPlayer(player, buyPrice);
+        locale.sendMessage(player, "auction-buy-success", StringPlaceholders.single("price", String.format("%.2f", buyPrice)));
+    }
+
+    /**
+     * Expire an auction
+     *
+     * @param auction The auction to expire
+     */
+    public void expireAuction(Auction auction) {
+        auction.setExpired(true);
+        auction.setSold(false);
+        auction.setExpiredTime(System.currentTimeMillis());
+        this.data.saveAuction(auction);
+    }
+
+    /**
+     * Delete an auction from the database
+     *
+     * @param auction The auction to delete
+     */
+    public void deleteAuction(Auction auction) {
+        auction.setExpired(true);
+        auction.setSold(true);
+        this.data.deleteAuction(auction);
     }
 
     /**
@@ -140,6 +227,18 @@ public class AuctionManager extends Manager {
         return this.data.getAuctionCache().values()
                 .stream()
                 .filter(auction -> auction.getSeller().equals(uuid))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Get all active auctions that are not expired or sold
+     *
+     * @return a list of auctions
+     */
+    public List<Auction> getActiveActions() {
+        return this.data.getAuctionCache().values()
+                .stream()
+                .filter(auction -> !auction.isSold() && !auction.isExpired())
                 .collect(java.util.stream.Collectors.toList());
     }
 
@@ -183,6 +282,23 @@ public class AuctionManager extends Manager {
     }
 
     /**
+     * Get the time left for an auction
+     *
+     * @param auction the auction
+     * @return the time left in milliseconds
+     */
+    public long getTimeLeft(Auction auction) {
+        // get the amount of time left since the auction was created in milliseconds
+        long timeLeft = Duration.between(Instant.now(), Instant.ofEpochMilli(auction.getCreatedTime() + this.getEndTime())).toMillis();
+
+        if (timeLeft <= 0) {
+            timeLeft = 0;
+        }
+        return timeLeft;
+    }
+
+
+    /**
      * Check if a player's inventory can hold an item.
      *
      * @param player the player to check
@@ -198,7 +314,7 @@ public class AuctionManager extends Manager {
      * @return time until auctions expire
      */
     public long getEndTime() {
-        return PluginUtils.parseTime(ConfigurationManager.Settings.LIST_TIME.toString());
+        return PluginUtils.parseTime(Settings.LIST_TIME.getString());
     }
 
     /**
@@ -251,7 +367,7 @@ public class AuctionManager extends Manager {
      * @return the maximum amount of auctions a player can have open
      */
     public int getMaximumAuctions(Player player) {
-        int amount = 0;
+        int amount = 1;
         for (PermissionAttachmentInfo info : player.getEffectivePermissions()) {
             final String target = info.getPermission().toLowerCase();
 

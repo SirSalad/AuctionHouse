@@ -26,8 +26,7 @@ public class DataManager extends AbstractDataManager {
 
     public DataManager(RosePlugin rosePlugin) {
         super(rosePlugin);
-
-        // Once upon a time
+        this.loadAuctions();
     }
 
     /**
@@ -47,11 +46,14 @@ public class DataManager extends AbstractDataManager {
 
                     // Create the auction
                     final Auction auction = new Auction(id, seller, item, price);
-                    auction.setBuyer(UUID.fromString(resultSet.getString("buyer")));
+                    if (resultSet.getString("buyer") != null) {
+                        auction.setBuyer(UUID.fromString(resultSet.getString("buyer")));
+                    }
                     auction.setCreatedTime(resultSet.getLong("createdTime"));
                     auction.setExpiredTime(resultSet.getLong("expiredTime"));
                     auction.setSoldTime(resultSet.getLong("soldTime"));
                     auction.setSold(resultSet.getBoolean("sold"));
+                    auction.setExpired(resultSet.getBoolean("expired"));
                     this.auctionCache.put(id, auction);
                 }
             }
@@ -65,7 +67,7 @@ public class DataManager extends AbstractDataManager {
      * @param item  The item to auction
      * @param price The price of the item
      */
-    public Auction createAuction(UUID uuid, ItemStack item, double price) {
+    public void createAuction(UUID uuid, ItemStack item, double price) {
         final Auction auction = new Auction(-1, uuid, item, price);
         auction.setCreatedTime(System.currentTimeMillis());
 
@@ -88,7 +90,6 @@ public class DataManager extends AbstractDataManager {
             }
         }));
 
-        return auction;
     }
 
     /**
@@ -102,28 +103,17 @@ public class DataManager extends AbstractDataManager {
         this.async(() -> this.databaseConnector.connect(connection -> {
 
             // Save auction in database where id matches the auction id
-            final String query = "UPDATE " + this.getTablePrefix() + "auctions SET seller = ?, " +
-                    "item = ?, " +
-                    "price = ?, " +
-                    "buyer = ?, " +
-                    "createdTime = ?," +
-                    " expiredTime = ?," +
-                    " soldTime = ?, " +
-                    "sold = ?, " +
-                    "expired = ?" +
-                    "WHERE id = ?";
-
+            final String query = "REPLACE INTO " + this.getTablePrefix() + "auctions (id, seller, item, price, createdTime, expiredTime, soldTime, sold, expired) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             try (var statement = connection.prepareStatement(query)) {
-                statement.setString(1, auction.getSeller().toString());
-                statement.setBytes(2, this.serialize(auction.getItem()));
-                statement.setDouble(3, auction.getPrice());
-                statement.setString(4, auction.getBuyer().toString());
+                statement.setInt(1, auction.getId());
+                statement.setString(2, auction.getSeller().toString());
+                statement.setBytes(3, this.serialize(auction.getItem()));
+                statement.setDouble(4, auction.getPrice());
                 statement.setLong(5, auction.getCreatedTime());
                 statement.setLong(6, auction.getExpiredTime());
                 statement.setLong(7, auction.getSoldTime());
                 statement.setBoolean(8, auction.isSold());
                 statement.setBoolean(9, auction.isExpired());
-                statement.setInt(10, auction.getId());
                 statement.executeUpdate();
             }
         }));

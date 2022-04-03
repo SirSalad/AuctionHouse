@@ -21,12 +21,32 @@ public class EnglishLocale implements Locale {
     public Map<String, Object> getDefaultLocaleValues() {
         return new HashMap<>() {{
             this.put("#0", "Plugin Command Prefix");
-            this.put("prefix", "<g:#00B4DB:#0083B0>&lAuctionHouse& &8| &f");
+            this.put("prefix", "<g:#00B4DB:#0083B0>&lAuctionHouse &8| &f");
 
             this.put("#1", "Generic Command Messages");
             this.put("no-permission", "You do not have permission to do that!");
             this.put("only-player", "This command can only be executed by a player!");
             this.put("unknown-command", "Unknown command, use #00B4DB/%cmd%&f help for more info");
+
+            this.put("#2", "Help Command Messages");
+            this.put("command-help-title", "Available Commands:");
+            this.put("command-help-description", "Displays the help menu");
+            this.put("command-help-list-description", " &8- #00B4DB/%cmd% %subcmd% %args% &7- &f%desc%");
+            this.put("command-help-list-description-no-args", " &8- #00B4DB/%cmd% %subcmd% &7- &f%desc%");
+
+            this.put("#3", "Reload Command Messages");
+            this.put("command-reload-description", "Reloads the plugin.");
+            this.put("command-reload-reloaded", "Configuration and locale files were reloaded");
+
+            this.put("#4", "Sell Command");
+            this.put("command-sell-description", "Put your hand item in the auction.");
+            this.put("command-sell-confirm", "Please confirm you want to sell your item for %price%");
+            this.put("command-sell-success", "You have put an item on the auction for %price%");
+            this.put("command-sell-max-reached", "You have reached the maximum amount of items you can sell at once. (%current%/%max%)");
+            this.put("command-sell-invalid-price", "Please specify a valid price. ($%min%-$%max%)");
+            this.put("command-sell-invalid-item", "Please provide a valid item to sell.");
+            this.put("command-sell-no-item", "We couldn't remove your item from your inventory. Please try again.");
+
         }};
     }
 }
