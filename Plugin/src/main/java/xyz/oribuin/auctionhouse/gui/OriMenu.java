@@ -237,7 +237,6 @@ public abstract class OriMenu {
         if (this.get(itemPath + ".enabled", true)) {
             this.put(gui, slot, itemPath, viewer, placeholders, eventConsumer);
         }
-
     }
 
     /**

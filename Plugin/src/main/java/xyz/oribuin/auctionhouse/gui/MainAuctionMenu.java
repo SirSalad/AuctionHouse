@@ -7,23 +7,30 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import xyz.oribuin.auctionhouse.auction.Auction;
+import xyz.oribuin.auctionhouse.auction.AuctionSort;
 import xyz.oribuin.auctionhouse.manager.AuctionManager;
 import xyz.oribuin.auctionhouse.manager.LocaleManager;
 import xyz.oribuin.auctionhouse.manager.MenuManager;
 import xyz.oribuin.auctionhouse.util.PluginUtils;
+import xyz.oribuin.auctionhouse.util.SortOption;
 import xyz.oribuin.gui.Item;
 import xyz.oribuin.gui.PaginatedGui;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class MainAuctionMenu extends OriMenu {
 
     private final MenuManager menuManager = this.rosePlugin.getManager(MenuManager.class);
+    private final Map<UUID, SortOption> sortMap = new HashMap<>();
 
     public MainAuctionMenu(RosePlugin rosePlugin) {
         super(rosePlugin);
@@ -37,9 +44,11 @@ public class MainAuctionMenu extends OriMenu {
             gui.setItem(slot, item, this.getEmptyConsumer());
         }
 
+        this.sortMap.putIfAbsent(player.getUniqueId(), new SortOption());
         this.put(gui, "next-page", player, event -> gui.next(player));
         this.put(gui, "refresh-menu", player, event -> this.setAuctions(gui, player));
         this.put(gui, "previous-page", player, event -> gui.previous(player));
+        this.setSort(gui, player);
 
         this.put(gui, "sold-auctions", player, event -> this.menuManager.get(SoldAuctionsMenu.class).open(player));
         this.put(gui, "expired-auctions", player, event -> this.menuManager.get(ExpiredAuctionsMenu.class).open(player));
@@ -55,15 +64,15 @@ public class MainAuctionMenu extends OriMenu {
         gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), pagePlaceholders));
     }
 
-
     /**
      * Set the auctions for the gui
      *
      * @param gui    Gui
      * @param player Player
      */
-    public void setAuctions(PaginatedGui gui, Player player) {
+    private void setAuctions(PaginatedGui gui, Player player) {
 
+        final AuctionSort sort = this.sortMap.get(player.getUniqueId()).getSort();
         final AuctionManager auctionManager = this.rosePlugin.getManager(AuctionManager.class);
 
         List<String> configLore = player.hasPermission("auctionhouse.admin")
@@ -73,7 +82,12 @@ public class MainAuctionMenu extends OriMenu {
         boolean loreBefore = this.get("lore-before", false);
 
         gui.getPageItems().clear();
-        auctionManager.getActiveActions().forEach(value -> {
+        final List<Auction> auctions = new ArrayList<>(auctionManager.getActiveActions());
+        if (sort.getComparator() != null) {
+            auctions.sort(sort.getComparator());
+        }
+
+        auctions.forEach(value -> {
 
             if (auctionManager.isAuctionExpired(value)) {
                 auctionManager.expireAuction(value);
@@ -142,6 +156,29 @@ public class MainAuctionMenu extends OriMenu {
         gui.update();
     }
 
+    /**
+     * Set the sort option for the gui
+     *
+     * @param gui    The Gui
+     * @param player The Player
+     */
+    private void setSort(PaginatedGui gui, Player player) {
+        SortOption option = this.sortMap.getOrDefault(player.getUniqueId(), new SortOption(AuctionSort.NONE, Arrays.stream(AuctionSort.values()).iterator()));
+        Consumer<InventoryClickEvent> consumer = event -> {
+
+            if (!option.getIterator().hasNext()) {
+                option.setIterator(Arrays.stream(AuctionSort.values()).iterator());
+            }
+
+            option.setSort(option.getIterator().next());
+            this.sortMap.put(player.getUniqueId(), option);
+            this.setSort(gui, player);
+            this.setAuctions(gui, player);
+        };
+
+        this.put(gui, "sort-auctions", player, StringPlaceholders.single("sort", option.getSort().getDisplayName()), consumer);
+    }
+
     @Override
     public int rows() {
         return this.get("gui-settings.rows", 6);
@@ -189,14 +226,14 @@ public class MainAuctionMenu extends OriMenu {
             this.put("next-page.name", "#00B4DB&lNext Page");
             this.put("next-page.lore", List.of(" &f| &7Click to go to", " &f| &7the next page."));
             this.put("next-page.glow", true);
-            this.put("next-page.slot", 50);
+            this.put("next-page.slot", 51);
 
             this.put("#6", "Previous Page");
             this.put("previous-page.material", "PAPER");
             this.put("previous-page.name", "#00B4DB&lPrevious Page");
             this.put("previous-page.lore", List.of(" &f| &7Click to go to", " &f| &7the previous page."));
             this.put("previous-page.glow", true);
-            this.put("previous-page.slot", 48);
+            this.put("previous-page.slot", 47);
 
             this.put("#7", "Sold Auctions Menu");
             this.put("sold-auctions.enabled", true);
@@ -220,7 +257,7 @@ public class MainAuctionMenu extends OriMenu {
             this.put("refresh-menu.name", "#00B4DB&lRefresh Menu");
             this.put("refresh-menu.lore", List.of(" &f| &7Click to refresh the menu."));
             this.put("refresh-menu.glow", true);
-            this.put("refresh-menu.slot", 49);
+            this.put("refresh-menu.slot", 48);
 
             this.put("#10", "My Auctions");
             this.put("my-auctions.enabled", true);
@@ -229,6 +266,15 @@ public class MainAuctionMenu extends OriMenu {
             this.put("my-auctions.lore", List.of(" &f| &7Click to go to", " &f| &7your auctions."));
             this.put("my-auctions.glow", true);
             this.put("my-auctions.slot", 4);
+
+            this.put("#11", "Sort Auctions");
+            this.put("sort-auctions.enabled", true);
+            this.put("sort-auctions.material", "COMPARATOR");
+            this.put("sort-auctions.name", "#00B4DB&lSort Auctions &8| &f%sort%");
+            this.put("sort-auctions.lore", List.of(" &f| &7Click to sort", " &f| &7your auctions."));
+            this.put("sort-auctions.glow", true);
+            this.put("sort-auctions.slot", 50);
+
         }};
     }
 
@@ -252,4 +298,5 @@ public class MainAuctionMenu extends OriMenu {
             // Empty function
         };
     }
+
 }

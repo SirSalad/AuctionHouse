@@ -147,7 +147,7 @@ public final class PluginUtils {
 
         // Build the item stack
         Item.Builder builder = new Item.Builder(material)
-                .setName(format(player, get(config, path + ".name", null)))
+                .setName(format(player, get(config, path + ".name", null), placeholders))
                 .setLore(lore)
                 .setAmount(Math.max(get(config, path + ".amount", 1), 1))
                 .setFlags(flags)

@@ -54,6 +54,8 @@ public class EnglishLocale implements Locale {
             this.put("command-buy-auction-gone", "The auction you are trying to buy has already been sold.");
             this.put("command-buy-no-space", "You don't have enough space in your inventory to buy this item.");
 
+            this.put("#6", "View Command");
+            this.put("command-view-description", "View any player's active auctions.");
         }};
     }
 }
