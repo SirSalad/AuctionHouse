@@ -21,15 +21,15 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class MainAuctionMenu extends OriMenu {
+public class ViewMenu extends OriMenu {
 
     private final MenuManager menuManager = this.rosePlugin.getManager(MenuManager.class);
 
-    public MainAuctionMenu(RosePlugin rosePlugin) {
+    public ViewMenu(RosePlugin rosePlugin) {
         super(rosePlugin);
     }
 
-    public void open(Player player) {
+    public void open(Player player, Player seller) {
         final PaginatedGui gui = this.createPagedGUI(player, this.getPageSlots());
         List<Integer> borderSlots = this.parseList(this.get("gui-settings.border-slots", List.of("35-54")));
         final ItemStack item = PluginUtils.getItemStack(this.config, "border-item", player, StringPlaceholders.empty());
@@ -38,17 +38,17 @@ public class MainAuctionMenu extends OriMenu {
         }
 
         this.put(gui, "next-page", player, event -> gui.next(player));
-        this.put(gui, "refresh-menu", player, event -> this.setAuctions(gui, player));
         this.put(gui, "previous-page", player, event -> gui.previous(player));
 
-        this.put(gui, "sold-auctions", player, event -> this.menuManager.get(SoldAuctionsMenu.class).open(player));
-        this.put(gui, "expired-auctions", player, event -> this.menuManager.get(ExpiredAuctionsMenu.class).open(player));
-        this.put(gui, "my-auctions", player, event -> this.menuManager.get(PersonalAuctionsMenu.class).open(player));
+        if (this.get("refresh-menu.enabled", true)) {
+            this.put(gui, "refresh-menu", player, event -> this.setAuctions(gui, player, seller));
+        }
 
-        this.setAuctions(gui, player);
+        this.setAuctions(gui, player, seller);
 
         final StringPlaceholders pagePlaceholders = StringPlaceholders.builder("page", gui.getPage())
                 .addPlaceholder("total", Math.max(gui.getTotalPages(), 1))
+                .addPlaceholder("player", seller.getName())
                 .build();
 
         gui.open(player);
@@ -62,18 +62,18 @@ public class MainAuctionMenu extends OriMenu {
      * @param gui    Gui
      * @param player Player
      */
-    public void setAuctions(PaginatedGui gui, Player player) {
+    public void setAuctions(PaginatedGui gui, Player player, Player seller) {
 
         final AuctionManager auctionManager = this.rosePlugin.getManager(AuctionManager.class);
 
         List<String> configLore = player.hasPermission("auctionhouse.admin")
-                ? this.get("admin-auction-lore", List.of("Missing option admin-auction-lore in /menus/main_menu.yml"))
-                : this.get("auction-lore", List.of("Missing option auction-lore in /menus/main_menu.yml"));
+                ? this.get("admin-auction-lore", List.of("Missing option admin-auction-lore in /menus/view_menu.yml"))
+                : this.get("auction-lore", List.of("Missing option auction-lore in /menus/view_menu.yml"));
 
         boolean loreBefore = this.get("lore-before", false);
 
         gui.getPageItems().clear();
-        auctionManager.getActiveActions().forEach(value -> {
+        auctionManager.getActiveAuctionsBySeller(seller.getUniqueId()).forEach(value -> {
 
             if (auctionManager.isAuctionExpired(value)) {
                 auctionManager.expireAuction(value);
@@ -115,8 +115,8 @@ public class MainAuctionMenu extends OriMenu {
                     .setLore(lore)
                     .create();
 
-            // Todo make it open the confirm gui.
             gui.addPageItem(baseItem, event -> {
+
                 if (event.isShiftClick() && player.hasPermission("auctionhouse.admin")) {
                     final AuctionManager manager = this.rosePlugin.getManager(AuctionManager.class);
                     if (event.isLeftClick())
@@ -125,7 +125,7 @@ public class MainAuctionMenu extends OriMenu {
                     else if (event.isRightClick())
                         manager.deleteAuction(value);
 
-                    this.setAuctions(gui, player);
+                    this.setAuctions(gui, player, seller);
                     return;
                 }
 
@@ -144,17 +144,17 @@ public class MainAuctionMenu extends OriMenu {
 
     @Override
     public int rows() {
-        return this.get("gui-settings.rows", 6);
+        return this.get("gui-settings.rows", 4);
     }
 
     @Override
     public Map<String, Object> getDefaultValues() {
         return new LinkedHashMap<>() {{
             this.put("#0", "GUI Settings");
-            this.put("gui-settings.title", "Auction House (%page%/%total%)");
-            this.put("gui-settings.rows", 6);
-            this.put("gui-settings.page-slots", List.of("9-44"));
-            this.put("gui-settings.border-slots", List.of("0-8", "45-53"));
+            this.put("gui-settings.title", "%player%'s Auctions (%page%/%total%)");
+            this.put("gui-settings.rows", 4);
+            this.put("gui-settings.page-slots", List.of("9-26"));
+            this.put("gui-settings.border-slots", List.of("0-8", "27-35"));
 
             this.put("#1", "Auction Lore Settings");
             this.put("auction-lore", List.of(
@@ -189,30 +189,14 @@ public class MainAuctionMenu extends OriMenu {
             this.put("next-page.name", "#00B4DB&lNext Page");
             this.put("next-page.lore", List.of(" &f| &7Click to go to", " &f| &7the next page."));
             this.put("next-page.glow", true);
-            this.put("next-page.slot", 50);
+            this.put("next-page.slot", 32);
 
             this.put("#6", "Previous Page");
             this.put("previous-page.material", "PAPER");
             this.put("previous-page.name", "#00B4DB&lPrevious Page");
             this.put("previous-page.lore", List.of(" &f| &7Click to go to", " &f| &7the previous page."));
             this.put("previous-page.glow", true);
-            this.put("previous-page.slot", 48);
-
-            this.put("#7", "Sold Auctions Menu");
-            this.put("sold-auctions.enabled", true);
-            this.put("sold-auctions.material", "GOLD_INGOT");
-            this.put("sold-auctions.name", "#00B4DB&lSold Auctions");
-            this.put("sold-auctions.lore", List.of(" &f| &7Click to go to", " &f| &7the sold auctions menu."));
-            this.put("sold-auctions.glow", true);
-            this.put("sold-auctions.slot", 2);
-
-            this.put("#8", "Expired Auctions Menu");
-            this.put("expired-auctions.enabled", true);
-            this.put("expired-auctions.material", "CLOCK");
-            this.put("expired-auctions.name", "#00B4DB&lExpired Auctions");
-            this.put("expired-auctions.lore", List.of(" &f| &7Click to go to", " &f| &7the expired auctions menu."));
-            this.put("expired-auctions.glow", true);
-            this.put("expired-auctions.slot", 6);
+            this.put("previous-page.slot", 30);
 
             this.put("#9", "Refresh Menu");
             this.put("refresh-menu.enabled", true);
@@ -220,21 +204,13 @@ public class MainAuctionMenu extends OriMenu {
             this.put("refresh-menu.name", "#00B4DB&lRefresh Menu");
             this.put("refresh-menu.lore", List.of(" &f| &7Click to refresh the menu."));
             this.put("refresh-menu.glow", true);
-            this.put("refresh-menu.slot", 49);
-
-            this.put("#10", "My Auctions");
-            this.put("my-auctions.enabled", true);
-            this.put("my-auctions.material", "BOOK");
-            this.put("my-auctions.name", "#00B4DB&lMy Auctions");
-            this.put("my-auctions.lore", List.of(" &f| &7Click to go to", " &f| &7your auctions."));
-            this.put("my-auctions.glow", true);
-            this.put("my-auctions.slot", 4);
+            this.put("refresh-menu.slot", 31);
         }};
     }
 
     @Override
     public String getMenuName() {
-        return "main_menu";
+        return "view_menu";
     }
 
     @Override

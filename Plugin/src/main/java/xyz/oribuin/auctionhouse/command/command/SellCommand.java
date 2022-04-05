@@ -34,7 +34,7 @@ public class SellCommand extends RoseCommand {
             return;
         }
 
-        // Mkae the player confirm they want to sell their item
+        // Make the player confirm they want to sell their item
         if (!this.confirmList.contains(player.getUniqueId())) {
             locale.sendMessage(player, "command-sell-confirm", StringPlaceholders.single("price", String.format("%.2f", price)));
             this.confirmList.add(player.getUniqueId());

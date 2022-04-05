@@ -3,9 +3,12 @@ package xyz.oribuin.auctionhouse.manager;
 import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.manager.Manager;
 import xyz.oribuin.auctionhouse.gui.ConfirmMenu;
+import xyz.oribuin.auctionhouse.gui.ExpiredAuctionsMenu;
 import xyz.oribuin.auctionhouse.gui.MainAuctionMenu;
 import xyz.oribuin.auctionhouse.gui.OriMenu;
+import xyz.oribuin.auctionhouse.gui.PersonalAuctionsMenu;
 import xyz.oribuin.auctionhouse.gui.SoldAuctionsMenu;
+import xyz.oribuin.auctionhouse.gui.ViewMenu;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -20,38 +23,27 @@ public class MenuManager extends Manager {
 
     @Override
     public void reload() {
-        this.getMenu(ConfirmMenu.class);
-        this.getMenu(MainAuctionMenu.class);
-        this.getMenu(SoldAuctionsMenu.class);
+        this.registeredMenus.put(ConfirmMenu.class, new ConfirmMenu(this.rosePlugin));
+        this.registeredMenus.put(ExpiredAuctionsMenu.class, new ExpiredAuctionsMenu(this.rosePlugin));
+        this.registeredMenus.put(SoldAuctionsMenu.class, new SoldAuctionsMenu(this.rosePlugin));
+        this.registeredMenus.put(MainAuctionMenu.class, new MainAuctionMenu(this.rosePlugin));
+        this.registeredMenus.put(ViewMenu.class, new ViewMenu(this.rosePlugin));
+        this.registeredMenus.put(PersonalAuctionsMenu.class, new PersonalAuctionsMenu(this.rosePlugin));
 
         this.registeredMenus.forEach((name, gui) -> gui.load());
+    }
 
+    @SuppressWarnings("unchecked")
+    public <T extends OriMenu> T get(Class<T> menuClass) {
+        if (this.registeredMenus.containsKey(menuClass)) {
+            return (T) this.registeredMenus.get(menuClass);
+        }
+
+        return null;
     }
 
     @Override
     public void disable() {
 
-    }
-
-    /**
-     * Get a menu by its class
-     *
-     * @param menuClass The class of the menu
-     * @param <T>       The type of the menu
-     * @return The menu
-     */
-    @SuppressWarnings("unchecked")
-    public <T extends OriMenu> T getMenu(Class<T> menuClass) {
-        if (this.registeredMenus.containsKey(menuClass)) {
-            return (T) this.registeredMenus.get(menuClass);
-        }
-        try {
-            T menu = (T) menuClass.getConstructor(RosePlugin.class).newInstance(this.rosePlugin);
-            this.registeredMenus.put(menuClass, menu);
-            menu.load();
-            return menu;
-        } catch (Exception ignored) {
-            throw new NullPointerException("Menu class " + menuClass.getName() + " is not registered!");
-        }
     }
 }

@@ -25,7 +25,7 @@ public class AuctionCommand extends BaseCommand {
             return;
         }
 
-        this.rosePlugin.getManager(MenuManager.class).getMenu(MainAuctionMenu.class).open(player);
+        this.rosePlugin.getManager(MenuManager.class).get(MainAuctionMenu.class).open(player);
     }
 
     @Override

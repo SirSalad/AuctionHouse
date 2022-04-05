@@ -2,10 +2,14 @@ package xyz.oribuin.auctionhouse.gui;
 
 import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.ItemStack;
 import xyz.oribuin.auctionhouse.auction.Auction;
 import xyz.oribuin.auctionhouse.manager.AuctionManager;
+import xyz.oribuin.auctionhouse.util.PluginUtils;
 import xyz.oribuin.gui.Gui;
 
 import java.util.LinkedHashMap;
@@ -45,6 +49,11 @@ public class ConfirmMenu extends OriMenu {
             gui.setItems(auctionSlots, auction.getItem(), this.getEmptyConsumer());
         }
 
+        final ConfigurationSection extra = this.config.getConfigurationSection("extra-items");
+        if (extra != null) {
+            extra.getKeys(false).forEach(key -> this.put(gui, "extra-items." + key, player, this.getEmptyConsumer()));
+        }
+
         gui.open(player);
     }
 
@@ -72,7 +81,7 @@ public class ConfirmMenu extends OriMenu {
             this.put("cancel-item.name", "#00B4DB&lCancel Purchase");
             this.put("cancel-item.lore", List.of(" &f| &7Click to cancel this", " &f| &7buying this item!"));
             this.put("cancel-item.slots", List.of("5-8"));
-            this.put("cancel-item.glow", true);
+            this.put("cancel-item.glow", false);
 
             this.put("#3", "Should the item the player is buying be put in the menu?");
             this.put("auction-item.enabled", true);

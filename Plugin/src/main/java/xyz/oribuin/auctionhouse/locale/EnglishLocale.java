@@ -27,6 +27,7 @@ public class EnglishLocale implements Locale {
             this.put("no-permission", "You do not have permission to do that!");
             this.put("only-player", "This command can only be executed by a player!");
             this.put("unknown-command", "Unknown command, use #00B4DB/%cmd%&f help for more info");
+            this.put("invalid-funds", "You do not have enough funds to do that!");
 
             this.put("#2", "Help Command Messages");
             this.put("command-help-title", "Available Commands:");
@@ -46,6 +47,12 @@ public class EnglishLocale implements Locale {
             this.put("command-sell-invalid-price", "Please specify a valid price. ($%min%-$%max%)");
             this.put("command-sell-invalid-item", "Please provide a valid item to sell.");
             this.put("command-sell-no-item", "We couldn't remove your item from your inventory. Please try again.");
+
+            this.put("#5", "Buy Command");
+            this.put("command-buy-success", "You have bought an item for %price% from %player%");
+            this.put("command-buy-own-auction", "You can't buy your own auction!");
+            this.put("command-buy-auction-gone", "The auction you are trying to buy has already been sold.");
+            this.put("command-buy-no-space", "You don't have enough space in your inventory to buy this item.");
 
         }};
     }

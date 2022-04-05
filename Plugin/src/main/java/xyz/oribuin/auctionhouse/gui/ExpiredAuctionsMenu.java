@@ -2,35 +2,36 @@ package xyz.oribuin.auctionhouse.gui;
 
 import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import xyz.oribuin.auctionhouse.manager.AuctionManager;
-import xyz.oribuin.auctionhouse.manager.LocaleManager;
 import xyz.oribuin.auctionhouse.manager.MenuManager;
 import xyz.oribuin.auctionhouse.util.PluginUtils;
 import xyz.oribuin.gui.Item;
 import xyz.oribuin.gui.PaginatedGui;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class MainAuctionMenu extends OriMenu {
+public class ExpiredAuctionsMenu extends OriMenu {
 
     private final MenuManager menuManager = this.rosePlugin.getManager(MenuManager.class);
 
-    public MainAuctionMenu(RosePlugin rosePlugin) {
+    public ExpiredAuctionsMenu(RosePlugin rosePlugin) {
         super(rosePlugin);
     }
 
     public void open(Player player) {
         final PaginatedGui gui = this.createPagedGUI(player, this.getPageSlots());
+
         List<Integer> borderSlots = this.parseList(this.get("gui-settings.border-slots", List.of("35-54")));
         final ItemStack item = PluginUtils.getItemStack(this.config, "border-item", player, StringPlaceholders.empty());
         for (int slot : borderSlots) {
@@ -42,7 +43,7 @@ public class MainAuctionMenu extends OriMenu {
         this.put(gui, "previous-page", player, event -> gui.previous(player));
 
         this.put(gui, "sold-auctions", player, event -> this.menuManager.get(SoldAuctionsMenu.class).open(player));
-        this.put(gui, "expired-auctions", player, event -> this.menuManager.get(ExpiredAuctionsMenu.class).open(player));
+        this.put(gui, "main-auctions", player, event -> this.menuManager.get(MainAuctionMenu.class).open(player));
         this.put(gui, "my-auctions", player, event -> this.menuManager.get(PersonalAuctionsMenu.class).open(player));
 
         this.setAuctions(gui, player);
@@ -63,22 +64,15 @@ public class MainAuctionMenu extends OriMenu {
      * @param player Player
      */
     public void setAuctions(PaginatedGui gui, Player player) {
-
+        final SimpleDateFormat dateFormat = new SimpleDateFormat(this.get("date-format", "HH:mm:ss dd/MM/yy"));
         final AuctionManager auctionManager = this.rosePlugin.getManager(AuctionManager.class);
 
-        List<String> configLore = player.hasPermission("auctionhouse.admin")
-                ? this.get("admin-auction-lore", List.of("Missing option admin-auction-lore in /menus/main_menu.yml"))
-                : this.get("auction-lore", List.of("Missing option auction-lore in /menus/main_menu.yml"));
+        List<String> configLore = this.get("auction-lore", List.of("Missing option auction-lore in /menus/sold_auctions.yml"));
 
         boolean loreBefore = this.get("lore-before", false);
 
         gui.getPageItems().clear();
-        auctionManager.getActiveActions().forEach(value -> {
-
-            if (auctionManager.isAuctionExpired(value)) {
-                auctionManager.expireAuction(value);
-                return;
-            }
+        auctionManager.getExpiredAuctionsBySeller(player.getUniqueId()).forEach(value -> {
 
             ItemStack baseItem = value.getItem().clone();
             final ItemMeta meta = baseItem.getItemMeta();
@@ -100,13 +94,9 @@ public class MainAuctionMenu extends OriMenu {
                 lore.addAll(configLore);
             }
 
-            final String timeLeft = PluginUtils.formatTime(auctionManager.getTimeLeft(value));
-            final String formattedTime = timeLeft.equals("0") ? "Expired" : timeLeft;
-
             final StringPlaceholders auctionPls = StringPlaceholders.builder()
                     .addPlaceholder("price", String.format("%.2f", value.getPrice()))
-                    .addPlaceholder("seller", Bukkit.getOfflinePlayer(value.getSeller()).getName())
-                    .addPlaceholder("time", formattedTime)
+                    .addPlaceholder("expired", dateFormat.format(new Date(value.getExpiredTime())))
                     .build();
 
 
@@ -115,27 +105,15 @@ public class MainAuctionMenu extends OriMenu {
                     .setLore(lore)
                     .create();
 
-            // Todo make it open the confirm gui.
             gui.addPageItem(baseItem, event -> {
-                if (event.isShiftClick() && player.hasPermission("auctionhouse.admin")) {
-                    final AuctionManager manager = this.rosePlugin.getManager(AuctionManager.class);
-                    if (event.isLeftClick())
-                        manager.expireAuction(value);
+                if (!event.isShiftClick())
+                    return;
 
-                    else if (event.isRightClick())
-                        manager.deleteAuction(value);
-
+                ItemStack item = value.getItem().clone();
+                if (player.getInventory().addItem(item).isEmpty()) {
+                    auctionManager.deleteAuction(value);
                     this.setAuctions(gui, player);
-                    return;
                 }
-
-                if (player.getUniqueId() == value.getSeller()) {
-                    player.closeInventory();
-                    this.rosePlugin.getManager(LocaleManager.class).sendMessage(player, "command-buy-own-auction");
-                    return;
-                }
-
-                this.menuManager.get(ConfirmMenu.class).open(player, value);
             });
         });
 
@@ -151,7 +129,7 @@ public class MainAuctionMenu extends OriMenu {
     public Map<String, Object> getDefaultValues() {
         return new LinkedHashMap<>() {{
             this.put("#0", "GUI Settings");
-            this.put("gui-settings.title", "Auction House (%page%/%total%)");
+            this.put("gui-settings.title", "Expired Auctions (%page%/%total%)");
             this.put("gui-settings.rows", 6);
             this.put("gui-settings.page-slots", List.of("9-44"));
             this.put("gui-settings.border-slots", List.of("0-8", "45-53"));
@@ -160,22 +138,13 @@ public class MainAuctionMenu extends OriMenu {
             this.put("auction-lore", List.of(
                     " &8------ #00B4DB&lSelling Item &8------",
                     " &f| &7Price: &f$%price%",
-                    " &f| &7Time: &f%time%",
-                    " &f| &7Seller: &f%seller%",
+                    " &f| &7Expired: &f%expired%",
                     " &f|",
-                    " &f| &7Click to purchase"
+                    " &f| &7Shift-Click to reclaim."
             ));
 
-            this.put("admin-auction-lore", List.of(
-                    " &8------ #00B4DB&lSelling Item &8------",
-                    " &f| &7Price: &f$%price%",
-                    " &f| &7Time: &f%time%",
-                    " &f| &7Seller: &f%seller%",
-                    " &f|",
-                    " &f| &7Click to purchase",
-                    " &f| &7Shift-Left Click to expire",
-                    " &f| &7Shift-Right Click to cancel"
-            ));
+            this.put("#2", "Expired Time Format");
+            this.put("date-format", "HH:mm:ss dd/MM/yy");
 
             this.put("#3", "Should the lore be before or after the item's lore?");
             this.put("lore-before", false);
@@ -206,15 +175,24 @@ public class MainAuctionMenu extends OriMenu {
             this.put("sold-auctions.glow", true);
             this.put("sold-auctions.slot", 2);
 
-            this.put("#8", "Expired Auctions Menu");
-            this.put("expired-auctions.enabled", true);
-            this.put("expired-auctions.material", "CLOCK");
-            this.put("expired-auctions.name", "#00B4DB&lExpired Auctions");
-            this.put("expired-auctions.lore", List.of(" &f| &7Click to go to", " &f| &7the expired auctions menu."));
-            this.put("expired-auctions.glow", true);
-            this.put("expired-auctions.slot", 6);
+            this.put("#8", "My Auctions");
+            this.put("my-auctions.enabled", true);
+            this.put("my-auctions.material", "BOOK");
+            this.put("my-auctions.name", "#00B4DB&lMy Auctions");
+            this.put("my-auctions.lore", List.of(" &f| &7Click to go to", " &f| &7your auctions."));
+            this.put("my-auctions.glow", true);
+            this.put("my-auctions.slot", 4);
 
-            this.put("#9", "Refresh Menu");
+            this.put("#9", "Main Auctions Menu");
+            this.put("main-auctions.enabled", true);
+            this.put("main-auctions.material", "BEACON");
+            this.put("main-auctions.name", "#00B4DB&lMain Menu");
+            this.put("main-auctions.lore", List.of(" &f| &7Click to go to", " &f| &7the main auction menu."));
+            this.put("main-auctions.glow", true);
+            this.put("main-auctions.slot", 6);
+
+
+            this.put("#10", "Refresh Menu");
             this.put("refresh-menu.enabled", true);
             this.put("refresh-menu.material", "SUNFLOWER");
             this.put("refresh-menu.name", "#00B4DB&lRefresh Menu");
@@ -222,19 +200,13 @@ public class MainAuctionMenu extends OriMenu {
             this.put("refresh-menu.glow", true);
             this.put("refresh-menu.slot", 49);
 
-            this.put("#10", "My Auctions");
-            this.put("my-auctions.enabled", true);
-            this.put("my-auctions.material", "BOOK");
-            this.put("my-auctions.name", "#00B4DB&lMy Auctions");
-            this.put("my-auctions.lore", List.of(" &f| &7Click to go to", " &f| &7your auctions."));
-            this.put("my-auctions.glow", true);
-            this.put("my-auctions.slot", 4);
+
         }};
     }
 
     @Override
     public String getMenuName() {
-        return "main_menu";
+        return "expired_auctions";
     }
 
     @Override

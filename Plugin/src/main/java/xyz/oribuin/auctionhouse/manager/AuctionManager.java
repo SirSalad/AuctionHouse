@@ -3,6 +3,7 @@ package xyz.oribuin.auctionhouse.manager;
 import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.manager.Manager;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachmentInfo;
@@ -143,7 +144,7 @@ public class AuctionManager extends Manager {
 
         // Make sure the auction is has not been sold or expired
         if (auction.isSold() || this.isAuctionExpired(auction)) {
-            locale.sendMessage(player, "auction-gone");
+            locale.sendMessage(player, "command-buy-auction-gone");
             return;
         }
 
@@ -161,7 +162,7 @@ public class AuctionManager extends Manager {
         // Remove the item and check if it has been removed
         ItemStack item = auction.getItem();
         if (!player.getInventory().addItem(item).isEmpty()) {
-            locale.sendMessage(player, "auction-buy-no-space");
+            locale.sendMessage(player, "command-buy-no-space");
             return;
         }
 
@@ -172,7 +173,13 @@ public class AuctionManager extends Manager {
 
         this.data.saveAuction(auction);
         VaultHook.getEconomy().withdrawPlayer(player, buyPrice);
-        locale.sendMessage(player, "auction-buy-success", StringPlaceholders.single("price", String.format("%.2f", buyPrice)));
+
+        final StringPlaceholders placeholders = StringPlaceholders.builder()
+                .addPlaceholder("price", String.format("%.2f", buyPrice))
+                .addPlaceholder("seller", Bukkit.getOfflinePlayer(auction.getSeller()).getName())
+                .build();
+
+        locale.sendMessage(player, "auction-buy-success", placeholders);
     }
 
     /**
