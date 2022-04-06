@@ -2,6 +2,7 @@ package xyz.oribuin.auctionhouse.gui;
 
 import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
@@ -11,6 +12,8 @@ import xyz.oribuin.auctionhouse.util.PluginUtils;
 import xyz.oribuin.gui.Item;
 import xyz.oribuin.gui.PaginatedGui;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +68,9 @@ public class SellerMenu extends OriMenu {
         }
 
         gui.getPageItems().clear();
-        auctionManager.getActiveSellers().forEach(value -> {
+        List<OfflinePlayer> activeSellers = new ArrayList<>(auctionManager.getActiveSellers());
+        activeSellers.sort(Comparator.comparing(OfflinePlayer::getName));
+        activeSellers.forEach(value -> {
             final ItemStack item = PluginUtils.getItemStack(this.config, "seller-item", player, StringPlaceholders.single("player", value.getName()));
             final ItemStack newItem = new Item.Builder(item)
                     .setOwner(value)
