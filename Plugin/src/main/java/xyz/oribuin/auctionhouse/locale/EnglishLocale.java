@@ -49,7 +49,7 @@ public class EnglishLocale implements Locale {
             this.put("command-sell-no-item", "We couldn't remove your item from your inventory. Please try again.");
 
             this.put("#5", "Buy Command");
-            this.put("command-buy-success", "You have bought an item for %price% from %player%");
+            this.put("command-buy-success", "You have bought an item for %price% from %seller%");
             this.put("command-buy-own-auction", "You can't buy your own auction!");
             this.put("command-buy-auction-gone", "The auction you are trying to buy has already been sold.");
             this.put("command-buy-no-space", "You don't have enough space in your inventory to buy this item.");
