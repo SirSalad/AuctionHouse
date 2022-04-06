@@ -71,6 +71,12 @@ public class ExpiredAuctionsMenu extends OriMenu {
 
         boolean loreBefore = this.get("lore-before", false);
 
+        for (int slot : gui.getItemMap().keySet()) {
+            if (this.getPageSlots().contains(slot)) {
+                gui.getItemMap().remove(slot);
+            }
+        }
+        
         gui.getPageItems().clear();
         auctionManager.getExpiredAuctionsBySeller(player.getUniqueId()).forEach(value -> {
 
@@ -190,7 +196,6 @@ public class ExpiredAuctionsMenu extends OriMenu {
             this.put("main-auctions.lore", List.of(" &f| &7Click to go to", " &f| &7the main auction menu."));
             this.put("main-auctions.glow", true);
             this.put("main-auctions.slot", 6);
-
 
             this.put("#10", "Refresh Menu");
             this.put("refresh-menu.enabled", true);

@@ -45,10 +45,11 @@ public class MainAuctionMenu extends OriMenu {
         }
 
         this.sortMap.putIfAbsent(player.getUniqueId(), new SortOption());
+        this.setSort(gui, player);
         this.put(gui, "next-page", player, event -> gui.next(player));
         this.put(gui, "refresh-menu", player, event -> this.setAuctions(gui, player));
         this.put(gui, "previous-page", player, event -> gui.previous(player));
-        this.setSort(gui, player);
+        this.put(gui, "auction-sellers", player, event -> this.menuManager.get(SellerMenu.class).open(player));
 
         this.put(gui, "sold-auctions", player, event -> this.menuManager.get(SoldAuctionsMenu.class).open(player));
         this.put(gui, "expired-auctions", player, event -> this.menuManager.get(ExpiredAuctionsMenu.class).open(player));
@@ -80,6 +81,12 @@ public class MainAuctionMenu extends OriMenu {
                 : this.get("auction-lore", List.of("Missing option auction-lore in /menus/main_menu.yml"));
 
         boolean loreBefore = this.get("lore-before", false);
+
+        for (int slot : gui.getItemMap().keySet()) {
+            if (this.getPageSlots().contains(slot)) {
+                gui.getItemMap().remove(slot);
+            }
+        }
 
         gui.getPageItems().clear();
         final List<Auction> auctions = new ArrayList<>(auctionManager.getActiveActions());
@@ -226,14 +233,14 @@ public class MainAuctionMenu extends OriMenu {
             this.put("next-page.name", "#00B4DB&lNext Page");
             this.put("next-page.lore", List.of(" &f| &7Click to go to", " &f| &7the next page."));
             this.put("next-page.glow", true);
-            this.put("next-page.slot", 51);
+            this.put("next-page.slot", 50);
 
             this.put("#6", "Previous Page");
             this.put("previous-page.material", "PAPER");
             this.put("previous-page.name", "#00B4DB&lPrevious Page");
             this.put("previous-page.lore", List.of(" &f| &7Click to go to", " &f| &7the previous page."));
             this.put("previous-page.glow", true);
-            this.put("previous-page.slot", 47);
+            this.put("previous-page.slot", 48);
 
             this.put("#7", "Sold Auctions Menu");
             this.put("sold-auctions.enabled", true);
@@ -257,7 +264,7 @@ public class MainAuctionMenu extends OriMenu {
             this.put("refresh-menu.name", "#00B4DB&lRefresh Menu");
             this.put("refresh-menu.lore", List.of(" &f| &7Click to refresh the menu."));
             this.put("refresh-menu.glow", true);
-            this.put("refresh-menu.slot", 48);
+            this.put("refresh-menu.slot", 49);
 
             this.put("#10", "My Auctions");
             this.put("my-auctions.enabled", true);
@@ -273,7 +280,15 @@ public class MainAuctionMenu extends OriMenu {
             this.put("sort-auctions.name", "#00B4DB&lSort Auctions &8| &f%sort%");
             this.put("sort-auctions.lore", List.of(" &f| &7Click to sort", " &f| &7your auctions."));
             this.put("sort-auctions.glow", true);
-            this.put("sort-auctions.slot", 50);
+            this.put("sort-auctions.slot", 46);
+
+            this.put("#12", "Auction Sellers");
+            this.put("auction-sellers.enabled", true);
+            this.put("auction-sellers.material", "SPRUCE_SIGN");
+            this.put("auction-sellers.name", "#00B4DB&lAuction Sellers");
+            this.put("auction-sellers.lore", List.of(" &f| &7Click to go to", " &f| &7the auction sellers menu."));
+            this.put("auction-sellers.glow", true);
+            this.put("auction-sellers.slot", 52);
 
         }};
     }

@@ -72,14 +72,18 @@ public class SoldAuctionsMenu extends OriMenu {
 
         boolean loreBefore = this.get("lore-before", false);
 
+        for (int slot : gui.getItemMap().keySet()) {
+            if (this.getPageSlots().contains(slot)) {
+                gui.getItemMap().remove(slot);
+            }
+        }
+        
         gui.getPageItems().clear();
         auctionManager.getSoldAuctionsBySeller(player.getUniqueId()).forEach(value -> {
 
             // dont add the auction if the buyer is not there.
             if (value.getBuyer() == null)
                 return;
-
-
 
             ItemStack baseItem = value.getItem().clone();
             final ItemMeta meta = baseItem.getItemMeta();

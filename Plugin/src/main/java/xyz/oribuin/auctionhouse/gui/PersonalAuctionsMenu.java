@@ -67,7 +67,13 @@ public class PersonalAuctionsMenu extends OriMenu {
         List<String> configLore = this.get("auction-lore", List.of("Missing option auction-lore in /menus/sold_auctions.yml"));
 
         boolean loreBefore = this.get("lore-before", false);
-
+        
+        for (int slot : gui.getItemMap().keySet()) {
+            if (this.getPageSlots().contains(slot)) {
+                gui.getItemMap().remove(slot);
+            }
+        }
+        
         gui.getPageItems().clear();
         auctionManager.getActiveAuctionsBySeller(player.getUniqueId()).forEach(value -> {
 
@@ -108,6 +114,10 @@ public class PersonalAuctionsMenu extends OriMenu {
             gui.addPageItem(baseItem, event -> {
                 if (!event.isShiftClick())
                     return;
+
+                if (value.isExpired() || value.isSold()) {
+                    return;
+                }
 
                 ItemStack item = value.getItem().clone();
                 if (player.getInventory().addItem(item).isEmpty()) {

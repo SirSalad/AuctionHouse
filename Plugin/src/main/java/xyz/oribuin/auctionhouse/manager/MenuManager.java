@@ -7,6 +7,7 @@ import xyz.oribuin.auctionhouse.gui.ExpiredAuctionsMenu;
 import xyz.oribuin.auctionhouse.gui.MainAuctionMenu;
 import xyz.oribuin.auctionhouse.gui.OriMenu;
 import xyz.oribuin.auctionhouse.gui.PersonalAuctionsMenu;
+import xyz.oribuin.auctionhouse.gui.SellerMenu;
 import xyz.oribuin.auctionhouse.gui.SoldAuctionsMenu;
 import xyz.oribuin.auctionhouse.gui.ViewMenu;
 
@@ -15,7 +16,7 @@ import java.util.Map;
 
 public class MenuManager extends Manager {
 
-    private final Map<Class<? extends OriMenu>, OriMenu> registeredMenus = new LinkedHashMap<>();
+    private Map<Class<? extends OriMenu>, OriMenu> registeredMenus;
 
     public MenuManager(RosePlugin rosePlugin) {
         super(rosePlugin);
@@ -23,12 +24,16 @@ public class MenuManager extends Manager {
 
     @Override
     public void reload() {
-        this.registeredMenus.put(ConfirmMenu.class, new ConfirmMenu(this.rosePlugin));
-        this.registeredMenus.put(ExpiredAuctionsMenu.class, new ExpiredAuctionsMenu(this.rosePlugin));
-        this.registeredMenus.put(SoldAuctionsMenu.class, new SoldAuctionsMenu(this.rosePlugin));
-        this.registeredMenus.put(MainAuctionMenu.class, new MainAuctionMenu(this.rosePlugin));
-        this.registeredMenus.put(ViewMenu.class, new ViewMenu(this.rosePlugin));
-        this.registeredMenus.put(PersonalAuctionsMenu.class, new PersonalAuctionsMenu(this.rosePlugin));
+
+        this.registeredMenus = new LinkedHashMap<>() {{
+            this.put(ConfirmMenu.class, new ConfirmMenu(rosePlugin));
+            this.put(ExpiredAuctionsMenu.class, new ExpiredAuctionsMenu(rosePlugin));
+            this.put(SoldAuctionsMenu.class, new SoldAuctionsMenu(rosePlugin));
+            this.put(MainAuctionMenu.class, new MainAuctionMenu(rosePlugin));
+            this.put(ViewMenu.class, new ViewMenu(rosePlugin));
+            this.put(PersonalAuctionsMenu.class, new PersonalAuctionsMenu(rosePlugin));
+            this.put(SellerMenu.class, new SellerMenu(rosePlugin));
+        }};
 
         this.registeredMenus.forEach((name, gui) -> gui.load());
     }

@@ -3,6 +3,7 @@ package xyz.oribuin.auctionhouse.gui;
 import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
@@ -29,7 +30,7 @@ public class ViewMenu extends OriMenu {
         super(rosePlugin);
     }
 
-    public void open(Player player, Player seller) {
+    public void open(Player player, OfflinePlayer seller) {
         final PaginatedGui gui = this.createPagedGUI(player, this.getPageSlots());
         List<Integer> borderSlots = this.parseList(this.get("gui-settings.border-slots", List.of("35-54")));
         final ItemStack item = PluginUtils.getItemStack(this.config, "border-item", player, StringPlaceholders.empty());
@@ -62,7 +63,7 @@ public class ViewMenu extends OriMenu {
      * @param gui    Gui
      * @param player Player
      */
-    public void setAuctions(PaginatedGui gui, Player player, Player seller) {
+    public void setAuctions(PaginatedGui gui, Player player, OfflinePlayer seller) {
 
         final AuctionManager auctionManager = this.rosePlugin.getManager(AuctionManager.class);
 
@@ -71,6 +72,12 @@ public class ViewMenu extends OriMenu {
                 : this.get("auction-lore", List.of("Missing option auction-lore in /menus/view_menu.yml"));
 
         boolean loreBefore = this.get("lore-before", false);
+
+        for (int slot : gui.getItemMap().keySet()) {
+            if (this.getPageSlots().contains(slot)) {
+                gui.getItemMap().remove(slot);
+            }
+        }
 
         gui.getPageItems().clear();
         auctionManager.getActiveAuctionsBySeller(seller.getUniqueId()).forEach(value -> {

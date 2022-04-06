@@ -4,6 +4,7 @@ import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.manager.Manager;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachmentInfo;
@@ -179,7 +180,7 @@ public class AuctionManager extends Manager {
                 .addPlaceholder("seller", Bukkit.getOfflinePlayer(auction.getSeller()).getName())
                 .build();
 
-        locale.sendMessage(player, "auction-buy-success", placeholders);
+        locale.sendMessage(player, "command-buy-success", placeholders);
     }
 
     /**
@@ -188,6 +189,10 @@ public class AuctionManager extends Manager {
      * @param auction The auction to expire
      */
     public void expireAuction(Auction auction) {
+        if (auction.isExpired()) {
+            return;
+        }
+
         auction.setExpired(true);
         auction.setSold(false);
         auction.setExpiredTime(System.currentTimeMillis());
@@ -200,9 +205,14 @@ public class AuctionManager extends Manager {
      * @param auction The auction to delete
      */
     public void deleteAuction(Auction auction) {
+        if (auction.getId() == -1) {
+            return;
+        }
+
         auction.setExpired(true);
         auction.setSold(true);
         this.data.deleteAuction(auction);
+        auction.setId(-1);
     }
 
     /**
@@ -285,6 +295,19 @@ public class AuctionManager extends Manager {
         return this.getAuctionsBySeller(uuid)
                 .stream()
                 .filter(Auction::isSold)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all offline players selling an item
+     *
+     * @return a list of offline players
+     */
+    public List<OfflinePlayer> getActiveSellers() {
+        return this.data.getAuctionCache().values()
+                .stream()
+                .filter(auction -> !auction.isSold() && !auction.isExpired())
+                .map(auction -> Bukkit.getOfflinePlayer(auction.getSeller()))
                 .collect(Collectors.toList());
     }
 
