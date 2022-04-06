@@ -299,15 +299,16 @@ public class AuctionManager extends Manager {
     }
 
     /**
-     * Get all offline players selling an item
+     * Get all offline players selling an item, no duplicates
      *
      * @return a list of offline players
      */
     public List<OfflinePlayer> getActiveSellers() {
-        return this.data.getAuctionCache().values()
+        return this.getActiveActions()
                 .stream()
-                .filter(auction -> !auction.isSold() && !auction.isExpired())
-                .map(auction -> Bukkit.getOfflinePlayer(auction.getSeller()))
+                .map(Auction::getSeller)
+                .distinct()
+                .map(Bukkit::getOfflinePlayer)
                 .collect(Collectors.toList());
     }
 
