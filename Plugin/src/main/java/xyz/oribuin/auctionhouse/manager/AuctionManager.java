@@ -35,7 +35,6 @@ public class AuctionManager extends Manager {
     @Override
     public void reload() {
         this.data = this.rosePlugin.getManager(DataManager.class);
-//        this.data.loadAuctions();
     }
 
     @Override
@@ -67,11 +66,23 @@ public class AuctionManager extends Manager {
             return;
         }
 
+        Long listTime = this.listingCooldown.get(player.getUniqueId());
+        double cooldownMillis = Settings.LIST_COOLDOWN.getDouble() * 1000.0;
+
+        // check if the player is on cooldown
+        if (listTime != null && listTime + cooldownMillis > System.currentTimeMillis()) {
+            // format the time remaining to 1 decimal place
+            String timeLeft = String.format("%.1f", (listTime + cooldownMillis - System.currentTimeMillis()) / 1000.0);
+
+            locale.sendMessage(player, "command-sell-cooldown", StringPlaceholders.single("time", timeLeft));
+            return;
+        }
+
         // Check if the player has enough money to create an auction
         double listPrice = Settings.LIST_PRICE.getDouble();
         double playerBalance = VaultHook.getEconomy().getBalance(player);
 
-        if (listPrice > playerBalance) {
+        if (listPrice != 0 && listPrice > playerBalance) {
             locale.sendMessage(player, "invalid-funds", StringPlaceholders.builder().addPlaceholder("price", listPrice).build());
             return;
         }
@@ -117,6 +128,8 @@ public class AuctionManager extends Manager {
             locale.sendMessage(player, "command-sell-no-item");
             return;
         }
+
+        this.listingCooldown.put(player.getUniqueId(), System.currentTimeMillis());
 
         this.data.createAuction(player.getUniqueId(), item, price);
         if (listPrice > 0) {

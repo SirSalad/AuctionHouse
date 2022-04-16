@@ -47,6 +47,8 @@ public class EnglishLocale implements Locale {
             this.put("command-sell-invalid-price", "Please specify a valid price. ($%min%-$%max%)");
             this.put("command-sell-invalid-item", "Please provide a valid item to sell.");
             this.put("command-sell-no-item", "We couldn't remove your item from your inventory. Please try again.");
+            this.put("command-sell-cooldown", "You must wait %time% seconds before you can sell another item.");
+            this.put("command-sell-disabled-item", "You cannot sell this item.");
 
             this.put("#5", "Buy Command");
             this.put("command-buy-success", "You have bought an item for %price% from %seller%");
