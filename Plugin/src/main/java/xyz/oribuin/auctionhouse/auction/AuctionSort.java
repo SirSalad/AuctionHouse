@@ -1,6 +1,8 @@
 package xyz.oribuin.auctionhouse.auction;
 
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Optional;
 
 public enum AuctionSort {
     NONE("None ", null),
@@ -23,6 +25,16 @@ public enum AuctionSort {
 
     public Comparator<Auction> getComparator() {
         return comparator;
+    }
+
+    /**
+     * Get the enum value from the display name
+     *
+     * @param name the display name
+     * @return the enum value
+     */
+    public static Optional<AuctionSort> match(String name) {
+        return Arrays.stream(values()).filter(sort -> sort.name().equalsIgnoreCase(name)).findFirst();
     }
 
 }

@@ -31,12 +31,15 @@ public class MainAuctionMenu extends OriMenu {
 
     private final MenuManager menuManager = this.rosePlugin.getManager(MenuManager.class);
     private final Map<UUID, SortOption> sortMap = new HashMap<>();
+    private AuctionSort defaultSort;
 
     public MainAuctionMenu(RosePlugin rosePlugin) {
         super(rosePlugin);
     }
 
     public void open(Player player) {
+        this.defaultSort = AuctionSort.match(this.get("sort-auctions.default", null)).orElse(AuctionSort.TIME_ASCENDING);
+
         final PaginatedGui gui = this.createPagedGUI(player, this.getPageSlots());
         List<Integer> borderSlots = this.parseList(this.get("gui-settings.border-slots", List.of("35-54")));
         final ItemStack item = PluginUtils.getItemStack(this.config, "border-item", player, StringPlaceholders.empty());
@@ -44,7 +47,7 @@ public class MainAuctionMenu extends OriMenu {
             gui.setItem(slot, item, this.getEmptyConsumer());
         }
 
-        this.sortMap.putIfAbsent(player.getUniqueId(), new SortOption());
+        this.sortMap.putIfAbsent(player.getUniqueId(), new SortOption(this.defaultSort));
         this.setSort(gui, player);
         this.put(gui, "next-page", player, event -> gui.next(player));
         this.put(gui, "refresh-menu", player, event -> this.setAuctions(gui, player));
@@ -170,7 +173,7 @@ public class MainAuctionMenu extends OriMenu {
      * @param player The Player
      */
     private void setSort(PaginatedGui gui, Player player) {
-        SortOption option = this.sortMap.getOrDefault(player.getUniqueId(), new SortOption(AuctionSort.NONE, Arrays.stream(AuctionSort.values()).iterator()));
+        SortOption option = this.sortMap.getOrDefault(player.getUniqueId(), new SortOption(this.defaultSort));
         Consumer<InventoryClickEvent> consumer = event -> {
 
             if (!option.getIterator().hasNext()) {
@@ -275,14 +278,16 @@ public class MainAuctionMenu extends OriMenu {
             this.put("my-auctions.slot", 4);
 
             this.put("#11", "Sort Auctions");
+            this.put("#12", "Sort Defaults: NONE, PRICE_ASCENDING, PRICE_DESCENDING, TIME_ASCENDING, TIME_DESCENDING");
             this.put("sort-auctions.enabled", true);
+            this.put("sort-auctions.default", "TIME_ASCENDING");
             this.put("sort-auctions.material", "COMPARATOR");
             this.put("sort-auctions.name", "#00B4DB&lSort Auctions &8| &f%sort%");
             this.put("sort-auctions.lore", List.of(" &f| &7Click to sort", " &f| &7your auctions."));
             this.put("sort-auctions.glow", true);
             this.put("sort-auctions.slot", 46);
 
-            this.put("#12", "Auction Sellers");
+            this.put("#13", "Auction Sellers");
             this.put("auction-sellers.enabled", true);
             this.put("auction-sellers.material", "SPRUCE_SIGN");
             this.put("auction-sellers.name", "#00B4DB&lAuction Sellers");

@@ -9,6 +9,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import xyz.oribuin.auctionhouse.auction.Auction;
+import xyz.oribuin.auctionhouse.event.AuctionCreateEvent;
+import xyz.oribuin.auctionhouse.event.AuctionSoldEvent;
 import xyz.oribuin.auctionhouse.hook.VaultHook;
 import xyz.oribuin.auctionhouse.manager.ConfigurationManager.Settings;
 import xyz.oribuin.auctionhouse.nms.NMSAdapter;
@@ -173,6 +175,7 @@ public class AuctionManager extends Manager {
             return;
         }
 
+
         // Remove the item and check if it has been removed
         ItemStack item = auction.getItem();
         if (!player.getInventory().addItem(item).isEmpty()) {
@@ -184,6 +187,8 @@ public class AuctionManager extends Manager {
         auction.setSold(true);
         auction.setSoldPrice(buyPrice);
         auction.setBuyer(player.getUniqueId());
+
+        Bukkit.getPluginManager().callEvent(new AuctionSoldEvent(player, auction));
 
         this.data.saveAuction(auction);
         VaultHook.getEconomy().withdrawPlayer(player, buyPrice);
