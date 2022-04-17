@@ -8,7 +8,7 @@ public enum AuctionSort {
     NONE("None ", null),
     PRICE_ASCENDING("Price ↑", Comparator.comparingDouble(Auction::getPrice)),
     PRICE_DESCENDING("Price ↓", Comparator.comparingDouble(Auction::getPrice).reversed()),
-    TIME_ASCENDING("Time Remaining ↑", Comparator.comparingLong(Auction::getCreatedTime).reversed()),
+    TIME_ASCENDING("Time Ascending ↑", Comparator.comparingLong(Auction::getCreatedTime).reversed()),
     TIME_DESCENDING("Time Descending ↓", Comparator.comparingLong(Auction::getCreatedTime));
 
     private final String displayName;

@@ -28,7 +28,6 @@ public class DataManager extends AbstractDataManager {
 
     public DataManager(RosePlugin rosePlugin) {
         super(rosePlugin);
-        this.loadAuctions();
     }
 
     /**
@@ -38,6 +37,8 @@ public class DataManager extends AbstractDataManager {
         this.auctionCache.clear();
 
         this.async(() -> this.databaseConnector.connect(connection -> {
+            this.rosePlugin.getLogger().info("Loading auctions from database...");
+
             try (var statement = connection.prepareStatement("SELECT * FROM " + this.getTablePrefix() + "auctions")) {
                 ResultSet resultSet = statement.executeQuery();
                 while (resultSet.next()) {
@@ -59,6 +60,8 @@ public class DataManager extends AbstractDataManager {
                     this.auctionCache.put(id, auction);
                 }
             }
+
+            this.rosePlugin.getLogger().info("Loaded " + this.auctionCache.size() + " auctions from the database.");
         }));
     }
 

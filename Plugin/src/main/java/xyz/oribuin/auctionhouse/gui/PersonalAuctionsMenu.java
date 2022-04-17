@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -75,59 +76,58 @@ public class PersonalAuctionsMenu extends OriMenu {
         }
         
         gui.getPageItems().clear();
-        auctionManager.getActiveAuctionsBySeller(player.getUniqueId()).forEach(value -> {
+        this.async(() -> {
+            auctionManager.getActiveAuctionsBySeller(player.getUniqueId()).forEach(value -> {
 
-            ItemStack baseItem = value.getItem().clone();
-            final ItemMeta meta = baseItem.getItemMeta();
-            if (meta == null) {
-                return;
-            }
-
-            List<String> lore = new ArrayList<>();
-
-            if (loreBefore) {
-                lore.addAll(configLore);
-            }
-
-            if (meta.getLore() != null) {
-                lore.addAll(meta.getLore());
-            }
-
-            if (!loreBefore) {
-                lore.addAll(configLore);
-            }
-
-            final String timeLeft = PluginUtils.formatTime(auctionManager.getTimeLeft(value));
-            final String formattedTime = timeLeft.equals("0") ? "Expired" : timeLeft;
-
-            final StringPlaceholders auctionPls = StringPlaceholders.builder()
-                    .addPlaceholder("price", String.format("%.2f", value.getPrice()))
-                    .addPlaceholder("time", formattedTime)
-                    .build();
-
-
-            lore = lore.stream().map(s -> this.format(player, s, auctionPls)).collect(Collectors.toList());
-            baseItem = new Item.Builder(baseItem)
-                    .setLore(lore)
-                    .create();
-
-            gui.addPageItem(baseItem, event -> {
-                if (!event.isShiftClick())
-                    return;
-
-                if (value.isExpired() || value.isSold()) {
+                ItemStack baseItem = value.getItem().clone();
+                final ItemMeta meta = baseItem.getItemMeta();
+                if (meta == null) {
                     return;
                 }
 
-                ItemStack item = value.getItem().clone();
-                if (player.getInventory().addItem(item).isEmpty()) {
-                    auctionManager.deleteAuction(value);
-                    this.setAuctions(gui, player);
+                List<String> lore = new ArrayList<>();
+
+                if (loreBefore) {
+                    lore.addAll(configLore);
                 }
+
+                if (meta.getLore() != null) {
+                    lore.addAll(meta.getLore());
+                }
+
+                if (!loreBefore) {
+                    lore.addAll(configLore);
+                }
+
+                final String timeLeft = PluginUtils.formatTime(auctionManager.getTimeLeft(value));
+                final String formattedTime = timeLeft.equals("0") ? "Expired" : timeLeft;
+
+                final StringPlaceholders auctionPls = StringPlaceholders.builder()
+                        .addPlaceholder("price", String.format("%.2f", value.getPrice()))
+                        .addPlaceholder("time", formattedTime)
+                        .build();
+
+
+                lore = lore.stream().map(s -> this.format(player, s, auctionPls)).collect(Collectors.toList());
+                baseItem = new Item.Builder(baseItem)
+                        .setLore(lore)
+                        .create();
+
+                gui.addPageItem(baseItem, event -> {
+                    if (value.isExpired() || value.isSold()) {
+                        return;
+                    }
+
+                    ItemStack item = value.getItem().clone();
+                    if (player.getInventory().addItem(item).isEmpty()) {
+                        auctionManager.deleteAuction(value);
+                        this.sync(() -> this.setAuctions(gui, player));
+                    }
+                });
             });
-        });
 
-        gui.update();
+            gui.update();
+        });
     }
 
     @Override
@@ -150,7 +150,7 @@ public class PersonalAuctionsMenu extends OriMenu {
                     " &f| &7Price: &f$%price%",
                     " &f| &7Time: &f%time%",
                     " &f|",
-                    " &f| &7Shift-Click to cancel & claim."
+                    " &f| &7Click to cancel & claim."
             ));
 
             this.put("#2", "Expired Time Format");

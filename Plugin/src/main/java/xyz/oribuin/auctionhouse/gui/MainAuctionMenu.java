@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -97,73 +98,77 @@ public class MainAuctionMenu extends OriMenu {
             auctions.sort(sort.getComparator());
         }
 
-        auctions.forEach(value -> {
+       this.async(() -> {
 
-            if (auctionManager.isAuctionExpired(value)) {
-                auctionManager.expireAuction(value);
-                return;
-            }
+           System.out.println("Auctions Size: " + auctions.size());
+           auctions.forEach(value -> {
 
-            ItemStack baseItem = value.getItem().clone();
-            final ItemMeta meta = baseItem.getItemMeta();
-            if (meta == null) {
-                return;
-            }
+               if (auctionManager.isAuctionExpired(value)) {
+                   auctionManager.expireAuction(value);
+                   return;
+               }
 
-            List<String> lore = new ArrayList<>();
+               ItemStack baseItem = value.getItem().clone();
+               final ItemMeta meta = baseItem.getItemMeta();
+               if (meta == null) {
+                   return;
+               }
 
-            if (loreBefore) {
-                lore.addAll(configLore);
-            }
+               List<String> lore = new ArrayList<>();
 
-            if (meta.getLore() != null) {
-                lore.addAll(meta.getLore());
-            }
+               if (loreBefore) {
+                   lore.addAll(configLore);
+               }
 
-            if (!loreBefore) {
-                lore.addAll(configLore);
-            }
+               if (meta.getLore() != null) {
+                   lore.addAll(meta.getLore());
+               }
 
-            final String timeLeft = PluginUtils.formatTime(auctionManager.getTimeLeft(value));
-            final String formattedTime = timeLeft.equals("0") ? "Expired" : timeLeft;
+               if (!loreBefore) {
+                   lore.addAll(configLore);
+               }
 
-            final StringPlaceholders auctionPls = StringPlaceholders.builder()
-                    .addPlaceholder("price", String.format("%.2f", value.getPrice()))
-                    .addPlaceholder("seller", Bukkit.getOfflinePlayer(value.getSeller()).getName())
-                    .addPlaceholder("time", formattedTime)
-                    .build();
+               final String timeLeft = PluginUtils.formatTime(auctionManager.getTimeLeft(value));
+               final String formattedTime = timeLeft.equals("0") ? "Expired" : timeLeft;
+
+               final StringPlaceholders auctionPls = StringPlaceholders.builder()
+                       .addPlaceholder("price", String.format("%.2f", value.getPrice()))
+                       .addPlaceholder("seller", Bukkit.getOfflinePlayer(value.getSeller()).getName())
+                       .addPlaceholder("time", formattedTime)
+                       .build();
 
 
-            lore = lore.stream().map(s -> this.format(player, s, auctionPls)).collect(Collectors.toList());
-            baseItem = new Item.Builder(baseItem)
-                    .setLore(lore)
-                    .create();
+               lore = lore.stream().map(s -> this.format(player, s, auctionPls)).collect(Collectors.toList());
+               baseItem = new Item.Builder(baseItem)
+                       .setLore(lore)
+                       .create();
 
-            // Todo make it open the confirm gui.
-            gui.addPageItem(baseItem, event -> {
-                if (event.isShiftClick() && player.hasPermission("auctionhouse.admin")) {
-                    final AuctionManager manager = this.rosePlugin.getManager(AuctionManager.class);
-                    if (event.isLeftClick())
-                        manager.expireAuction(value);
+               ItemStack finalBaseItem = baseItem;
+               gui.addPageItem(finalBaseItem, event -> {
+                   if (event.isShiftClick() && player.hasPermission("auctionhouse.admin")) {
+                       final AuctionManager manager = this.rosePlugin.getManager(AuctionManager.class);
+                       if (event.isLeftClick())
+                           manager.expireAuction(value);
 
-                    else if (event.isRightClick())
-                        manager.deleteAuction(value);
+                       else if (event.isRightClick())
+                           manager.deleteAuction(value);
 
-                    this.setAuctions(gui, player);
-                    return;
-                }
+                       this.sync(() -> this.setAuctions(gui, player));
+                       return;
+                   }
 
-                if (player.getUniqueId() == value.getSeller()) {
-                    player.closeInventory();
-                    this.rosePlugin.getManager(LocaleManager.class).sendMessage(player, "command-buy-own-auction");
-                    return;
-                }
+                   if (player.getUniqueId() == value.getSeller()) {
+                       player.closeInventory();
+                       this.rosePlugin.getManager(LocaleManager.class).sendMessage(player, "command-buy-own-auction");
+                       return;
+                   }
 
-                this.menuManager.get(ConfirmMenu.class).open(player, value);
-            });
-        });
+                   this.menuManager.get(ConfirmMenu.class).open(player, value);
+               });
+           });
 
-        gui.update();
+           gui.update();
+       });
     }
 
     /**

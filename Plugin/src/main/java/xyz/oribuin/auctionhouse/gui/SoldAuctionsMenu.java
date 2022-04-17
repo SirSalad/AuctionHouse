@@ -19,6 +19,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -77,53 +78,56 @@ public class SoldAuctionsMenu extends OriMenu {
                 gui.getItemMap().remove(slot);
             }
         }
-        
+
         gui.getPageItems().clear();
-        auctionManager.getSoldAuctionsBySeller(player.getUniqueId()).forEach(value -> {
+        this.async(() -> {
+            auctionManager.getSoldAuctionsBySeller(player.getUniqueId()).forEach(value -> {
 
-            // dont add the auction if the buyer is not there.
-            if (value.getBuyer() == null)
-                return;
+                // dont add the auction if the buyer is not there.
+                if (value.getBuyer() == null)
+                    return;
 
-            ItemStack baseItem = value.getItem().clone();
-            final ItemMeta meta = baseItem.getItemMeta();
-            if (meta == null) {
-                return;
-            }
+                ItemStack baseItem = value.getItem().clone();
+                final ItemMeta meta = baseItem.getItemMeta();
+                if (meta == null) {
+                    return;
+                }
 
-            List<String> lore = new ArrayList<>();
+                List<String> lore = new ArrayList<>();
 
-            if (loreBefore) {
-                lore.addAll(configLore);
-            }
+                if (loreBefore) {
+                    lore.addAll(configLore);
+                }
 
-            if (meta.getLore() != null) {
-                lore.addAll(meta.getLore());
-            }
+                if (meta.getLore() != null) {
+                    lore.addAll(meta.getLore());
+                }
 
-            if (!loreBefore) {
-                lore.addAll(configLore);
-            }
+                if (!loreBefore) {
+                    lore.addAll(configLore);
+                }
 
-            final StringPlaceholders auctionPls = StringPlaceholders.builder()
-                    .addPlaceholder("price", String.format("%.2f", value.getPrice()))
-                    .addPlaceholder("buyer", Bukkit.getOfflinePlayer(value.getBuyer()).getName())
-                    .addPlaceholder("sold", dateFormat.format(new Date(value.getSoldTime())))
-                    .build();
+                final StringPlaceholders auctionPls = StringPlaceholders.builder()
+                        .addPlaceholder("price", String.format("%.2f", value.getPrice()))
+                        .addPlaceholder("buyer", Bukkit.getOfflinePlayer(value.getBuyer()).getName())
+                        .addPlaceholder("sold", dateFormat.format(new Date(value.getSoldTime())))
+                        .build();
 
 
-            lore = lore.stream().map(s -> this.format(player, s, auctionPls)).collect(Collectors.toList());
-            baseItem = new Item.Builder(baseItem)
-                    .setLore(lore)
-                    .create();
+                lore = lore.stream().map(s -> this.format(player, s, auctionPls)).collect(Collectors.toList());
+                baseItem = new Item.Builder(baseItem)
+                        .setLore(lore)
+                        .create();
 
-            gui.addPageItem(baseItem, event -> {
-                auctionManager.deleteAuction(value);
-                this.setAuctions(gui, player);
+                gui.addPageItem(baseItem, event -> {
+                    auctionManager.deleteAuction(value);
+                    this.sync(() -> this.setAuctions(gui, player));
+                });
+
             });
-        });
 
-        gui.update();
+            gui.update();
+        });
     }
 
     @Override

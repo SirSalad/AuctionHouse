@@ -46,6 +46,7 @@ public class AuctionHousePlugin extends RosePlugin {
         if (PAPI.isEnabled()) {
             new PAPI(this).register();
         }
+
     }
 
     @Override

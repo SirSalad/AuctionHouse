@@ -188,7 +188,7 @@ public abstract class OriMenu {
      *
      * @param gui      The GUI
      * @param itemPath The path to the item
-     * @param viewer   The item viewer
+     * @param player  The item viewer
      */
     public final void put(BaseGui gui, String itemPath, Player player) {
         this.put(gui, itemPath, player, StringPlaceholders.empty());
@@ -348,5 +348,13 @@ public abstract class OriMenu {
         }
 
         return list;
+    }
+
+    public final void sync(Runnable runnable) {
+        this.rosePlugin.getServer().getScheduler().runTask(this.rosePlugin, runnable);
+    }
+
+    public final void async(Runnable runnable) {
+        this.rosePlugin.getServer().getScheduler().runTaskAsynchronously(this.rosePlugin, runnable);
     }
 }

@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -80,73 +81,76 @@ public class ViewMenu extends OriMenu {
         }
 
         gui.getPageItems().clear();
-        auctionManager.getActiveAuctionsBySeller(seller.getUniqueId()).forEach(value -> {
+        this.async(() -> {
 
-            if (auctionManager.isAuctionExpired(value)) {
-                auctionManager.expireAuction(value);
-                return;
-            }
+            auctionManager.getActiveAuctionsBySeller(seller.getUniqueId()).forEach(value -> {
 
-            ItemStack baseItem = value.getItem().clone();
-            final ItemMeta meta = baseItem.getItemMeta();
-            if (meta == null) {
-                return;
-            }
-
-            List<String> lore = new ArrayList<>();
-
-            if (loreBefore) {
-                lore.addAll(configLore);
-            }
-
-            if (meta.getLore() != null) {
-                lore.addAll(meta.getLore());
-            }
-
-            if (!loreBefore) {
-                lore.addAll(configLore);
-            }
-
-            final String timeLeft = PluginUtils.formatTime(auctionManager.getTimeLeft(value));
-            final String formattedTime = timeLeft.equals("0") ? "Expired" : timeLeft;
-
-            final StringPlaceholders auctionPls = StringPlaceholders.builder()
-                    .addPlaceholder("price", String.format("%.2f", value.getPrice()))
-                    .addPlaceholder("seller", Bukkit.getOfflinePlayer(value.getSeller()).getName())
-                    .addPlaceholder("time", formattedTime)
-                    .build();
-
-
-            lore = lore.stream().map(s -> this.format(player, s, auctionPls)).collect(Collectors.toList());
-            baseItem = new Item.Builder(baseItem)
-                    .setLore(lore)
-                    .create();
-
-            gui.addPageItem(baseItem, event -> {
-
-                if (event.isShiftClick() && player.hasPermission("auctionhouse.admin")) {
-                    final AuctionManager manager = this.rosePlugin.getManager(AuctionManager.class);
-                    if (event.isLeftClick())
-                        manager.expireAuction(value);
-
-                    else if (event.isRightClick())
-                        manager.deleteAuction(value);
-
-                    this.setAuctions(gui, player, seller);
+                if (auctionManager.isAuctionExpired(value)) {
+                    auctionManager.expireAuction(value);
                     return;
                 }
 
-                if (player.getUniqueId() == value.getSeller()) {
-                    player.closeInventory();
-                    this.rosePlugin.getManager(LocaleManager.class).sendMessage(player, "command-buy-own-auction");
+                ItemStack baseItem = value.getItem().clone();
+                final ItemMeta meta = baseItem.getItemMeta();
+                if (meta == null) {
                     return;
                 }
 
-                this.menuManager.get(ConfirmMenu.class).open(player, value);
+                List<String> lore = new ArrayList<>();
+
+                if (loreBefore) {
+                    lore.addAll(configLore);
+                }
+
+                if (meta.getLore() != null) {
+                    lore.addAll(meta.getLore());
+                }
+
+                if (!loreBefore) {
+                    lore.addAll(configLore);
+                }
+
+                final String timeLeft = PluginUtils.formatTime(auctionManager.getTimeLeft(value));
+                final String formattedTime = timeLeft.equals("0") ? "Expired" : timeLeft;
+
+                final StringPlaceholders auctionPls = StringPlaceholders.builder()
+                        .addPlaceholder("price", String.format("%.2f", value.getPrice()))
+                        .addPlaceholder("seller", Bukkit.getOfflinePlayer(value.getSeller()).getName())
+                        .addPlaceholder("time", formattedTime)
+                        .build();
+
+
+                lore = lore.stream().map(s -> this.format(player, s, auctionPls)).collect(Collectors.toList());
+                baseItem = new Item.Builder(baseItem)
+                        .setLore(lore)
+                        .create();
+
+                gui.addPageItem(baseItem, event -> {
+
+                    if (event.isShiftClick() && player.hasPermission("auctionhouse.admin")) {
+                        final AuctionManager manager = this.rosePlugin.getManager(AuctionManager.class);
+                        if (event.isLeftClick())
+                            manager.expireAuction(value);
+
+                        else if (event.isRightClick())
+                            manager.deleteAuction(value);
+
+                        this.sync(() -> this.setAuctions(gui, player, seller));
+                        return;
+                    }
+
+                    if (player.getUniqueId() == value.getSeller()) {
+                        player.closeInventory();
+                        this.rosePlugin.getManager(LocaleManager.class).sendMessage(player, "command-buy-own-auction");
+                        return;
+                    }
+
+                    this.menuManager.get(ConfirmMenu.class).open(player, value);
+                });
             });
-        });
 
-        gui.update();
+            gui.update();
+        });
     }
 
     @Override

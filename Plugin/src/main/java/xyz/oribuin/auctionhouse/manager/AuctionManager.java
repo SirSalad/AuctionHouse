@@ -9,7 +9,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import xyz.oribuin.auctionhouse.auction.Auction;
-import xyz.oribuin.auctionhouse.event.AuctionCreateEvent;
 import xyz.oribuin.auctionhouse.event.AuctionSoldEvent;
 import xyz.oribuin.auctionhouse.hook.VaultHook;
 import xyz.oribuin.auctionhouse.manager.ConfigurationManager.Settings;
@@ -37,6 +36,7 @@ public class AuctionManager extends Manager {
     @Override
     public void reload() {
         this.data = this.rosePlugin.getManager(DataManager.class);
+        this.data.loadAuctions();
     }
 
     @Override
@@ -191,10 +191,11 @@ public class AuctionManager extends Manager {
         Bukkit.getPluginManager().callEvent(new AuctionSoldEvent(player, auction));
 
         this.data.saveAuction(auction);
-        VaultHook.getEconomy().withdrawPlayer(player, buyPrice);
+        VaultHook.getEconomy().withdrawPlayer(player, auction.getPrice());
+        VaultHook.getEconomy().depositPlayer(Bukkit.getOfflinePlayer(auction.getSeller()), buyPrice);
 
         final StringPlaceholders placeholders = StringPlaceholders.builder()
-                .addPlaceholder("price", String.format("%.2f", buyPrice))
+                .addPlaceholder("price", String.format("%.2f", auction.getPrice()))
                 .addPlaceholder("seller", Bukkit.getOfflinePlayer(auction.getSeller()).getName())
                 .build();
 
@@ -223,14 +224,10 @@ public class AuctionManager extends Manager {
      * @param auction The auction to delete
      */
     public void deleteAuction(Auction auction) {
-        if (auction.getId() == -1) {
-            return;
-        }
 
         auction.setExpired(true);
         auction.setSold(true);
         this.data.deleteAuction(auction);
-        auction.setId(-1);
     }
 
     /**

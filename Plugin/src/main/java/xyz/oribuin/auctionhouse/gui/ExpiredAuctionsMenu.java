@@ -64,6 +64,14 @@ public class ExpiredAuctionsMenu extends OriMenu {
      * @param player Player
      */
     public void setAuctions(PaginatedGui gui, Player player) {
+        gui.getPageItems().clear();
+
+        for (int slot : gui.getItemMap().keySet()) {
+            if (this.getPageSlots().contains(slot)) {
+                gui.getItemMap().remove(slot);
+            }
+        }
+
         final SimpleDateFormat dateFormat = new SimpleDateFormat(this.get("date-format", "HH:mm:ss dd/MM/yy"));
         final AuctionManager auctionManager = this.rosePlugin.getManager(AuctionManager.class);
 
@@ -71,15 +79,8 @@ public class ExpiredAuctionsMenu extends OriMenu {
 
         boolean loreBefore = this.get("lore-before", false);
 
-        for (int slot : gui.getItemMap().keySet()) {
-            if (this.getPageSlots().contains(slot)) {
-                gui.getItemMap().remove(slot);
-            }
-        }
-        
-        gui.getPageItems().clear();
-        auctionManager.getExpiredAuctionsBySeller(player.getUniqueId()).forEach(value -> {
 
+        this.async(() -> auctionManager.getExpiredAuctionsBySeller(player.getUniqueId()).forEach(value -> {
             ItemStack baseItem = value.getItem().clone();
             final ItemMeta meta = baseItem.getItemMeta();
             if (meta == null) {
@@ -102,9 +103,8 @@ public class ExpiredAuctionsMenu extends OriMenu {
 
             final StringPlaceholders auctionPls = StringPlaceholders.builder()
                     .addPlaceholder("price", String.format("%.2f", value.getPrice()))
-                    .addPlaceholder("expired", dateFormat.format(new Date(value.getExpiredTime())))
+                    .addPlaceholder("expired", value.getExpiredTime() == 0 ? "Unknown" : dateFormat.format(new Date(value.getExpiredTime())))
                     .build();
-
 
             lore = lore.stream().map(s -> this.format(player, s, auctionPls)).collect(Collectors.toList());
             baseItem = new Item.Builder(baseItem)
@@ -112,18 +112,17 @@ public class ExpiredAuctionsMenu extends OriMenu {
                     .create();
 
             gui.addPageItem(baseItem, event -> {
-                if (!event.isShiftClick())
-                    return;
-
                 ItemStack item = value.getItem().clone();
                 if (player.getInventory().addItem(item).isEmpty()) {
                     auctionManager.deleteAuction(value);
-                    this.setAuctions(gui, player);
+                    // Do this sync to prevent duplicate items
+                    this.sync(() -> this.setAuctions(gui, player));
                 }
             });
-        });
 
-        gui.update();
+            gui.update();
+        }));
+        
     }
 
     @Override
@@ -146,7 +145,7 @@ public class ExpiredAuctionsMenu extends OriMenu {
                     " &f| &7Price: &f$%price%",
                     " &f| &7Expired: &f%expired%",
                     " &f|",
-                    " &f| &7Shift-Click to reclaim."
+                    " &f| &7Click to reclaim."
             ));
 
             this.put("#2", "Expired Time Format");
@@ -204,8 +203,6 @@ public class ExpiredAuctionsMenu extends OriMenu {
             this.put("refresh-menu.lore", List.of(" &f| &7Click to refresh the menu."));
             this.put("refresh-menu.glow", true);
             this.put("refresh-menu.slot", 49);
-
-
         }};
     }
 
