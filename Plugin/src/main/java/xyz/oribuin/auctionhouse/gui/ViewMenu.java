@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -48,13 +47,8 @@ public class ViewMenu extends OriMenu {
 
         this.setAuctions(gui, player, seller);
 
-        final StringPlaceholders pagePlaceholders = StringPlaceholders.builder("page", gui.getPage())
-                .addPlaceholder("total", Math.max(gui.getTotalPages(), 1))
-                .addPlaceholder("player", seller.getName())
-                .build();
-
         gui.open(player);
-        gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), pagePlaceholders));
+        gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui, seller)));
     }
 
 
@@ -150,6 +144,7 @@ public class ViewMenu extends OriMenu {
             });
 
             gui.update();
+            this.sync(() -> gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui, seller))));
         });
     }
 
@@ -238,5 +233,15 @@ public class ViewMenu extends OriMenu {
         return e -> {
             // Empty function
         };
+    }
+
+    public StringPlaceholders getPagePlaceholders(PaginatedGui gui, OfflinePlayer player) {
+        return StringPlaceholders.builder()
+                .addPlaceholder("page", gui.getPage())
+                .addPlaceholder("total", Math.max(gui.getTotalPages(), 1))
+                .addPlaceholder("next", gui.getNextPage())
+                .addPlaceholder("previous", gui.getPrevPage())
+                .addPlaceholder("player", player.getName())
+                .build();
     }
 }

@@ -61,12 +61,8 @@ public class MainAuctionMenu extends OriMenu {
 
         this.setAuctions(gui, player);
 
-        final StringPlaceholders pagePlaceholders = StringPlaceholders.builder("page", gui.getPage())
-                .addPlaceholder("total", Math.max(gui.getTotalPages(), 1))
-                .build();
-
         gui.open(player);
-        gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), pagePlaceholders));
+        gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui)));
     }
 
     /**
@@ -99,8 +95,6 @@ public class MainAuctionMenu extends OriMenu {
         }
 
        this.async(() -> {
-
-           System.out.println("Auctions Size: " + auctions.size());
            auctions.forEach(value -> {
 
                if (auctionManager.isAuctionExpired(value)) {
@@ -168,6 +162,8 @@ public class MainAuctionMenu extends OriMenu {
            });
 
            gui.update();
+           // opening a gui cannot be async iirc
+           this.sync(() -> gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui))));
        });
     }
 
@@ -283,7 +279,7 @@ public class MainAuctionMenu extends OriMenu {
             this.put("my-auctions.slot", 4);
 
             this.put("#11", "Sort Auctions");
-            this.put("#12", "Sort Defaults: NONE, PRICE_ASCENDING, PRICE_DESCENDING, TIME_ASCENDING, TIME_DESCENDING");
+            this.put("#12", "Sort Defaults: PRICE_ASCENDING, PRICE_DESCENDING, TIME_ASCENDING, TIME_DESCENDING");
             this.put("sort-auctions.enabled", true);
             this.put("sort-auctions.default", "TIME_ASCENDING");
             this.put("sort-auctions.material", "COMPARATOR");

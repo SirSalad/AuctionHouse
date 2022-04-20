@@ -5,6 +5,7 @@ import dev.rosewood.rosegarden.command.framework.CommandContext;
 import dev.rosewood.rosegarden.command.framework.RoseCommand;
 import dev.rosewood.rosegarden.command.framework.RoseCommandWrapper;
 import dev.rosewood.rosegarden.command.framework.annotation.RoseExecutable;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import xyz.oribuin.auctionhouse.gui.ViewMenu;
 import xyz.oribuin.auctionhouse.manager.MenuManager;
@@ -17,7 +18,7 @@ public class ViewCommand extends RoseCommand {
     }
 
     @RoseExecutable
-    public void execute(CommandContext context, Player seller) {
+    public void execute(CommandContext context, OfflinePlayer seller) {
         final MenuManager manager = this.rosePlugin.getManager(MenuManager.class);
         final Player contextPlayer = (Player) context.getSender();
 

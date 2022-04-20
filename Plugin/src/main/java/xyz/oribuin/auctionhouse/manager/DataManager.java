@@ -52,6 +52,7 @@ public class DataManager extends AbstractDataManager {
                     if (resultSet.getString("buyer") != null) {
                         auction.setBuyer(UUID.fromString(resultSet.getString("buyer")));
                     }
+
                     auction.setCreatedTime(resultSet.getLong("createdTime"));
                     auction.setExpiredTime(resultSet.getLong("expiredTime"));
                     auction.setSoldTime(resultSet.getLong("soldTime"));
@@ -94,7 +95,6 @@ public class DataManager extends AbstractDataManager {
                 try (var resultSet = statement.getGeneratedKeys()) {
                     if (resultSet.next()) {
                         auction.setId(resultSet.getInt(1));
-                        this.auctionCache.put(auction.getId(), auction);
                         this.saveAuction(auction);
                     }
                 }

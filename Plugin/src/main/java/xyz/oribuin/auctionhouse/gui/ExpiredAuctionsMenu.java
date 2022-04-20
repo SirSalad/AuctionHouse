@@ -48,12 +48,9 @@ public class ExpiredAuctionsMenu extends OriMenu {
 
         this.setAuctions(gui, player);
 
-        final StringPlaceholders pagePlaceholders = StringPlaceholders.builder("page", gui.getPage())
-                .addPlaceholder("total", Math.max(gui.getTotalPages(), 1))
-                .build();
-
         gui.open(player);
-        gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), pagePlaceholders));
+        // opening a gui cannot be async iirc
+        gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui)));
     }
 
 
@@ -121,6 +118,8 @@ public class ExpiredAuctionsMenu extends OriMenu {
             });
 
             gui.update();
+            // opening a gui cannot be async iirc
+            this.sync(() -> gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui))));
         }));
         
     }

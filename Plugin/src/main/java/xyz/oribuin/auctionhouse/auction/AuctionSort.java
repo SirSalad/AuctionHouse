@@ -5,7 +5,6 @@ import java.util.Comparator;
 import java.util.Optional;
 
 public enum AuctionSort {
-    NONE("None ", null),
     PRICE_ASCENDING("Price ↑", Comparator.comparingDouble(Auction::getPrice)),
     PRICE_DESCENDING("Price ↓", Comparator.comparingDouble(Auction::getPrice).reversed()),
     TIME_ASCENDING("Time Ascending ↑", Comparator.comparingLong(Auction::getCreatedTime).reversed()),

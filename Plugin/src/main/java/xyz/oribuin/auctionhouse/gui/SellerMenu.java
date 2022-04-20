@@ -21,11 +21,15 @@ import java.util.function.Consumer;
 
 public class SellerMenu extends OriMenu {
 
+    private final MenuManager menuManager = this.rosePlugin.getManager(MenuManager.class);
+
     public SellerMenu(RosePlugin rosePlugin) {
         super(rosePlugin);
     }
 
     public void open(Player player) {
+
+
         final PaginatedGui gui = this.createPagedGUI(player, this.getPageSlots());
         List<Integer> borderSlots = this.parseList(this.get("gui-settings.border-slots", List.of("35-54")));
         final ItemStack item = PluginUtils.getItemStack(this.config, "border-item", player, StringPlaceholders.empty());
@@ -35,19 +39,15 @@ public class SellerMenu extends OriMenu {
 
         this.put(gui, "next-page", player, event -> gui.next(player));
         this.put(gui, "previous-page", player, event -> gui.previous(player));
+        this.put(gui, "refresh-menu", player, event -> this.setSellers(gui, player));
 
-        if (this.get("refresh-menu.enabled", true)) {
-            this.put(gui, "refresh-menu", player, event -> this.setSellers(gui, player));
-        }
+        this.put(gui, "sold-auctions", player, event -> this.menuManager.get(SoldAuctionsMenu.class).open(player));
+        this.put(gui, "main-auctions", player, event -> this.menuManager.get(MainAuctionMenu.class).open(player));
+        this.put(gui, "expired-auctions", player, event -> this.menuManager.get(ExpiredAuctionsMenu.class).open(player));
 
         this.setSellers(gui, player);
-
-        final StringPlaceholders pagePlaceholders = StringPlaceholders.builder("page", gui.getPage())
-                .addPlaceholder("total", Math.max(gui.getTotalPages(), 1))
-                .build();
-
         gui.open(player);
-        gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), pagePlaceholders));
+        gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), getPagePlaceholders(gui)));
     }
 
 
@@ -68,18 +68,22 @@ public class SellerMenu extends OriMenu {
         }
 
         gui.getPageItems().clear();
-        List<OfflinePlayer> activeSellers = new ArrayList<>(auctionManager.getActiveSellers());
-        activeSellers.sort(Comparator.comparing(OfflinePlayer::getName));
-        activeSellers.forEach(value -> {
-            final ItemStack item = PluginUtils.getItemStack(this.config, "seller-item", player, StringPlaceholders.single("player", value.getName()));
-            final ItemStack newItem = new Item.Builder(item)
-                    .setOwner(value)
-                    .create();
+        this.async(() -> {
+            List<OfflinePlayer> activeSellers = new ArrayList<>(auctionManager.getActiveSellers());
+            activeSellers.sort(Comparator.comparing(OfflinePlayer::getName));
+            activeSellers.forEach(value -> {
+                final ItemStack item = PluginUtils.getItemStack(this.config, "seller-item", player, StringPlaceholders.single("player", value.getName()));
+                final ItemStack newItem = new Item.Builder(item)
+                        .setOwner(value)
+                        .create();
 
-            gui.addPageItem(newItem, event -> this.rosePlugin.getManager(MenuManager.class).get(ViewMenu.class).open(player, value));
+                gui.addPageItem(newItem, event -> this.rosePlugin.getManager(MenuManager.class).get(ViewMenu.class).open(player, value));
+            });
+
+            gui.update();
+            // opening a gui cannot be async iirc
+            this.sync(() -> gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui))));
         });
-
-        gui.update();
     }
 
     @Override
@@ -127,6 +131,30 @@ public class SellerMenu extends OriMenu {
             this.put("refresh-menu.lore", List.of(" &f| &7Click to refresh the menu."));
             this.put("refresh-menu.glow", true);
             this.put("refresh-menu.slot", 31);
+
+            this.put("#7", "Sold Auctions Menu");
+            this.put("sold-auctions.enabled", true);
+            this.put("sold-auctions.material", "GOLD_INGOT");
+            this.put("sold-auctions.name", "#00B4DB&lSold Auctions");
+            this.put("sold-auctions.lore", List.of(" &f| &7Click to go to", " &f| &7the sold auctions menu."));
+            this.put("sold-auctions.glow", true);
+            this.put("sold-auctions.slot", 2);
+
+            this.put("#8", "Main Auctions Menu");
+            this.put("main-auctions.enabled", true);
+            this.put("main-auctions.material", "BEACON");
+            this.put("main-auctions.name", "#00B4DB&lMain Menu");
+            this.put("main-auctions.lore", List.of(" &f| &7Click to go to", " &f| &7the main auction menu."));
+            this.put("main-auctions.glow", true);
+            this.put("main-auctions.slot", 4);
+
+            this.put("#9", "Expired Auctions Menu");
+            this.put("expired-auctions.enabled", true);
+            this.put("expired-auctions.material", "CLOCK");
+            this.put("expired-auctions.name", "#00B4DB&lExpired Auctions");
+            this.put("expired-auctions.lore", List.of(" &f| &7Click to go to", " &f| &7the expired auctions menu."));
+            this.put("expired-auctions.glow", true);
+            this.put("expired-auctions.slot", 6);
         }};
     }
 

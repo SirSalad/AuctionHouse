@@ -49,13 +49,8 @@ public class SoldAuctionsMenu extends OriMenu {
         this.put(gui, "my-auctions", player, event -> this.menuManager.get(PersonalAuctionsMenu.class).open(player));
 
         this.setAuctions(gui, player);
-
-        final StringPlaceholders pagePlaceholders = StringPlaceholders.builder("page", gui.getPage())
-                .addPlaceholder("total", Math.max(gui.getTotalPages(), 1))
-                .build();
-
         gui.open(player);
-        gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), pagePlaceholders));
+        gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), getPagePlaceholders(gui)));
     }
 
 

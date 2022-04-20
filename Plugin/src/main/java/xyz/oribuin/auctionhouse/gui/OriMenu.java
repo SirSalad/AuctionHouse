@@ -350,6 +350,21 @@ public abstract class OriMenu {
         return list;
     }
 
+    /**
+     * Get the page placeholders for the gui
+     *
+     * @param gui The gui
+     * @return The page placeholders
+     */
+    public StringPlaceholders getPagePlaceholders(PaginatedGui gui) {
+        return StringPlaceholders.builder()
+                .addPlaceholder("page", gui.getPage())
+                .addPlaceholder("total", Math.max(gui.getTotalPages(), 1))
+                .addPlaceholder("next", gui.getNextPage())
+                .addPlaceholder("previous", gui.getPrevPage())
+                .build();
+    }
+
     public final void sync(Runnable runnable) {
         this.rosePlugin.getServer().getScheduler().runTask(this.rosePlugin, runnable);
     }
