@@ -178,10 +178,12 @@ public class AuctionManager extends Manager {
 
         // Remove the item and check if it has been removed
         ItemStack item = auction.getItem();
-        if (!player.getInventory().addItem(item).isEmpty()) {
+        if (player.getInventory().firstEmpty() == -1) {
             locale.sendMessage(player, "command-buy-no-space");
             return;
         }
+
+        player.getInventory().addItem(item);
 
         auction.setSoldTime(System.currentTimeMillis());
         auction.setSold(true);

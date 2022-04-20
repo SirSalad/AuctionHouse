@@ -115,9 +115,12 @@ public class PersonalAuctionsMenu extends OriMenu {
                     }
 
                     ItemStack item = value.getItem().clone();
-                    if (player.getInventory().addItem(item).isEmpty()) {
+                    if (player.getInventory().firstEmpty() != -1) {
                         auctionManager.deleteAuction(value);
-                        this.sync(() -> this.setAuctions(gui, player));
+                        this.sync(() -> {
+                            player.getInventory().addItem(item);
+                            this.setAuctions(gui, player);
+                        });
                     }
                 });
             });
