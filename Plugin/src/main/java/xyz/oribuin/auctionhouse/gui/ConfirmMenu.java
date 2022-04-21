@@ -2,12 +2,13 @@ package xyz.oribuin.auctionhouse.gui;
 
 import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
+import dev.triumphteam.gui.guis.Gui;
+import dev.triumphteam.gui.guis.GuiItem;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import xyz.oribuin.auctionhouse.auction.Auction;
 import xyz.oribuin.auctionhouse.manager.AuctionManager;
-import xyz.oribuin.gui.Gui;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,7 +44,7 @@ public class ConfirmMenu extends OriMenu {
 
         if (this.get("auction-item.enabled", true)) {
             List<Integer> auctionSlots = this.parseList(this.get("auction-item.slots", List.of("4-4")));
-            gui.setItems(auctionSlots, auction.getItem(), this.getEmptyConsumer());
+            gui.setItem(auctionSlots, new GuiItem(auction.getItem()));
         }
 
         final ConfigurationSection extra = this.config.getConfigurationSection("extra-items");

@@ -2,15 +2,16 @@ package xyz.oribuin.auctionhouse.gui;
 
 import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
+import dev.triumphteam.gui.guis.GuiItem;
+import dev.triumphteam.gui.guis.PaginatedGui;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import xyz.oribuin.auctionhouse.manager.AuctionManager;
 import xyz.oribuin.auctionhouse.manager.MenuManager;
+import xyz.oribuin.auctionhouse.util.ItemBuilder;
 import xyz.oribuin.auctionhouse.util.PluginUtils;
-import xyz.oribuin.gui.Item;
-import xyz.oribuin.gui.PaginatedGui;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -28,17 +29,14 @@ public class SellerMenu extends OriMenu {
     }
 
     public void open(Player player) {
+        final PaginatedGui gui = this.createPagedGUI(player);
 
-
-        final PaginatedGui gui = this.createPagedGUI(player, this.getPageSlots());
-        List<Integer> borderSlots = this.parseList(this.get("gui-settings.border-slots", List.of("35-54")));
         final ItemStack item = PluginUtils.getItemStack(this.config, "border-item", player, StringPlaceholders.empty());
-        for (int slot : borderSlots) {
-            gui.setItem(slot, item, this.getEmptyConsumer());
-        }
+        List<Integer> borderSlots = this.parseList(this.get("gui-settings.border-slots", List.of("35-54")));
+        gui.setItem(borderSlots, new GuiItem(item));
 
-        this.put(gui, "next-page", player, event -> gui.next(player));
-        this.put(gui, "previous-page", player, event -> gui.previous(player));
+        this.put(gui, "next-page", player, event -> gui.next());
+        this.put(gui, "previous-page", player, event -> gui.previous());
         this.put(gui, "refresh-menu", player, event -> this.setSellers(gui, player));
 
         this.put(gui, "sold-auctions", player, event -> this.menuManager.get(SoldAuctionsMenu.class).open(player));
@@ -47,7 +45,7 @@ public class SellerMenu extends OriMenu {
 
         this.setSellers(gui, player);
         gui.open(player);
-        gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), getPagePlaceholders(gui)));
+        this.sync(() -> gui.updateTitle(this.formatString(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui))));
     }
 
 
@@ -60,29 +58,24 @@ public class SellerMenu extends OriMenu {
     public void setSellers(PaginatedGui gui, Player player) {
 
         final AuctionManager auctionManager = this.rosePlugin.getManager(AuctionManager.class);
+        gui.clearPageItems(true);
 
-        for (int slot : gui.getItemMap().keySet()) {
-            if (this.getPageSlots().contains(slot)) {
-                gui.getItemMap().remove(slot);
-            }
-        }
 
-        gui.getPageItems().clear();
         this.async(() -> {
             List<OfflinePlayer> activeSellers = new ArrayList<>(auctionManager.getActiveSellers());
             activeSellers.sort(Comparator.comparing(OfflinePlayer::getName));
             activeSellers.forEach(value -> {
                 final ItemStack item = PluginUtils.getItemStack(this.config, "seller-item", player, StringPlaceholders.single("player", value.getName()));
-                final ItemStack newItem = new Item.Builder(item)
+                final ItemStack newItem = new ItemBuilder(item)
                         .setOwner(value)
                         .create();
 
-                gui.addPageItem(newItem, event -> this.rosePlugin.getManager(MenuManager.class).get(ViewMenu.class).open(player, value));
+                gui.addItem(new GuiItem(newItem, event -> this.rosePlugin.getManager(MenuManager.class).get(ViewMenu.class).open(player, value)));
             });
 
             gui.update();
             // opening a gui cannot be async iirc
-            this.sync(() -> gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui))));
+            this.sync(() -> gui.updateTitle(this.formatString(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui))));
         });
     }
 

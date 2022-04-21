@@ -39,8 +39,8 @@ shadowJar {
     archiveClassifier.set(null)
     relocate('dev.triumphteam.gui', "${project.group}.auctionhouse.libs.gui")
     relocate('dev.rosewood.rosegarden', "${project.group}.auctionhouse.libs.rosegarden")
-    relocate('org.slf4j', "${project.group}.auctionhouse.libs.slf4j")
-    relocate('com.zaxxer.hikari', "${project.group}.auctionhouse.libs.hikari")
+    relocate('net.kyori', "${project.group}.auctionhouse.libs.kyori")
+
 }
 
 tasks.getByName("build").dependsOn("shadowJar")

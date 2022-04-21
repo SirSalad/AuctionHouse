@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import xyz.oribuin.auctionhouse.auction.Auction;
+import xyz.oribuin.auctionhouse.auction.OfflineProfits;
 import xyz.oribuin.auctionhouse.event.AuctionSoldEvent;
 import xyz.oribuin.auctionhouse.hook.VaultHook;
 import xyz.oribuin.auctionhouse.manager.ConfigurationManager.Settings;
@@ -199,9 +200,15 @@ public class AuctionManager extends Manager {
         final StringPlaceholders placeholders = StringPlaceholders.builder()
                 .addPlaceholder("price", String.format("%.2f", auction.getPrice()))
                 .addPlaceholder("seller", Bukkit.getOfflinePlayer(auction.getSeller()).getName())
+                .addPlaceholder("buyer", player.getName())
                 .build();
 
+        Player seller = Bukkit.getPlayer(auction.getSeller());
+        if (seller != null) {
+            locale.sendMessage(seller, "auction-sold", placeholders);
+        }
         locale.sendMessage(player, "command-buy-success", placeholders);
+
     }
 
     /**
@@ -226,10 +233,55 @@ public class AuctionManager extends Manager {
      * @param auction The auction to delete
      */
     public void deleteAuction(Auction auction) {
-
         auction.setExpired(true);
         auction.setSold(true);
         this.data.deleteAuction(auction);
+    }
+
+    /**
+     * Send the player their offline profits
+     *
+     * @param player The player to load
+     */
+    public void showOfflineProfits(Player player) {
+        final OfflineProfits profits = this.data.getOfflineProfitsCache().getOrDefault(player.getUniqueId(), new OfflineProfits(0, 0));
+        final LocaleManager locale = this.rosePlugin.getManager(LocaleManager.class);
+
+        // Don't show the player their offline profits if they have none
+        if (profits.getProfit() <= 0) {
+            return;
+        }
+
+        final StringPlaceholders placeholders = StringPlaceholders.builder()
+                .addPlaceholder("amount", String.format("%.2f", profits.getProfit()))
+                .addPlaceholder("total", profits.getSold())
+                .build();
+
+        locale.sendMessage(player, "offline-profits", placeholders);
+        this.resetOfflineProfit(player.getUniqueId());
+    }
+
+    /**
+     * Add a player's offline profit
+     *
+     * @param player  The player to add
+     * @param auction The auction they sold
+     */
+    public void addOfflineProfit(UUID player, Auction auction) {
+        final OfflineProfits offlineProfits = this.data.getOfflineProfitsCache().getOrDefault(player, new OfflineProfits(0, 0));
+        double profits = offlineProfits.getProfit() + auction.getSoldPrice();
+        int sold = offlineProfits.getSold() + 1;
+
+        this.data.saveProfits(player, new OfflineProfits(profits, sold));
+    }
+
+    /**
+     * Reset a player's offline profits
+     *
+     * @param player The player to reset
+     */
+    public void resetOfflineProfit(UUID player) {
+        this.data.saveProfits(player, new OfflineProfits(0, 0));
     }
 
     /**
@@ -309,8 +361,9 @@ public class AuctionManager extends Manager {
      * @return a list of auctions
      */
     public List<Auction> getSoldAuctionsBySeller(UUID uuid) {
-        return this.getAuctionsBySeller(uuid)
+        return this.data.getAuctionCache().values()
                 .stream()
+                .filter(auction -> auction.getSeller().equals(uuid))
                 .filter(Auction::isSold)
                 .collect(Collectors.toList());
     }
@@ -321,8 +374,9 @@ public class AuctionManager extends Manager {
      * @return a list of offline players
      */
     public List<OfflinePlayer> getActiveSellers() {
-        return this.getActiveActions()
+        return this.data.getAuctionCache().values()
                 .stream()
+                .filter(auction -> !auction.isSold() && !auction.isExpired())
                 .map(Auction::getSeller)
                 .distinct()
                 .map(Bukkit::getOfflinePlayer)
@@ -430,4 +484,7 @@ public class AuctionManager extends Manager {
 
         return amount;
     }
+
+    // TODO: Create a queue system so the player knows their auction has been sold
+
 }

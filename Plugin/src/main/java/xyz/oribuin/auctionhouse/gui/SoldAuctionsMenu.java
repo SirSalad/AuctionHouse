@@ -2,6 +2,8 @@ package xyz.oribuin.auctionhouse.gui;
 
 import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
+import dev.triumphteam.gui.guis.GuiItem;
+import dev.triumphteam.gui.guis.PaginatedGui;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -9,9 +11,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import xyz.oribuin.auctionhouse.manager.AuctionManager;
 import xyz.oribuin.auctionhouse.manager.MenuManager;
+import xyz.oribuin.auctionhouse.util.ItemBuilder;
 import xyz.oribuin.auctionhouse.util.PluginUtils;
-import xyz.oribuin.gui.Item;
-import xyz.oribuin.gui.PaginatedGui;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -19,7 +20,6 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -32,25 +32,24 @@ public class SoldAuctionsMenu extends OriMenu {
     }
 
     public void open(Player player) {
-        final PaginatedGui gui = this.createPagedGUI(player, this.getPageSlots());
+        final PaginatedGui gui = this.createPagedGUI(player);
 
-        List<Integer> borderSlots = this.parseList(this.get("gui-settings.border-slots", List.of("35-54")));
         final ItemStack item = PluginUtils.getItemStack(this.config, "border-item", player, StringPlaceholders.empty());
-        for (int slot : borderSlots) {
-            gui.setItem(slot, item, this.getEmptyConsumer());
-        }
+        List<Integer> borderSlots = this.parseList(this.get("gui-settings.border-slots", List.of("35-54")));
+        gui.setItem(borderSlots, new GuiItem(item));
 
-        this.put(gui, "next-page", player, event -> gui.next(player));
+        this.put(gui, "next-page", player, event -> gui.next());
+        this.put(gui, "previous-page", player, event -> gui.previous());
         this.put(gui, "refresh-menu", player, event -> this.setAuctions(gui, player));
-        this.put(gui, "previous-page", player, event -> gui.previous(player));
 
         this.put(gui, "main-auctions", player, event -> this.menuManager.get(MainAuctionMenu.class).open(player));
-        this.put(gui, "expired-auctions", player, event -> this.menuManager.get(ExpiredAuctionsMenu.class).open(player));
         this.put(gui, "my-auctions", player, event -> this.menuManager.get(PersonalAuctionsMenu.class).open(player));
+        this.put(gui, "expired-auctions", player, event -> this.menuManager.get(ExpiredAuctionsMenu.class).open(player));
+
 
         this.setAuctions(gui, player);
         gui.open(player);
-        gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), getPagePlaceholders(gui)));
+        gui.updateTitle(this.formatString(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui)));
     }
 
 
@@ -65,16 +64,10 @@ public class SoldAuctionsMenu extends OriMenu {
         final AuctionManager auctionManager = this.rosePlugin.getManager(AuctionManager.class);
 
         List<String> configLore = this.get("auction-lore", List.of("Missing option auction-lore in /menus/sold_auctions.yml"));
-
         boolean loreBefore = this.get("lore-before", false);
 
-        for (int slot : gui.getItemMap().keySet()) {
-            if (this.getPageSlots().contains(slot)) {
-                gui.getItemMap().remove(slot);
-            }
-        }
+        gui.clearPageItems(true);
 
-        gui.getPageItems().clear();
         this.async(() -> {
             auctionManager.getSoldAuctionsBySeller(player.getUniqueId()).forEach(value -> {
 
@@ -109,19 +102,20 @@ public class SoldAuctionsMenu extends OriMenu {
                         .build();
 
 
-                lore = lore.stream().map(s -> this.format(player, s, auctionPls)).collect(Collectors.toList());
-                baseItem = new Item.Builder(baseItem)
+                lore = lore.stream().map(s -> PluginUtils.format(player, s, auctionPls)).collect(Collectors.toList());
+                baseItem = new ItemBuilder(baseItem)
                         .setLore(lore)
                         .create();
 
-                gui.addPageItem(baseItem, event -> {
+                gui.addItem(new GuiItem(baseItem, event -> {
                     auctionManager.deleteAuction(value);
                     this.sync(() -> this.setAuctions(gui, player));
-                });
+                }));
 
             });
 
             gui.update();
+            this.sync(() -> gui.updateTitle(this.formatString(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui))));
         });
     }
 

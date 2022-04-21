@@ -4,17 +4,19 @@ import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.config.CommentedFileConfiguration;
 import dev.rosewood.rosegarden.utils.HexUtils;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
+import dev.triumphteam.gui.guis.BaseGui;
+import dev.triumphteam.gui.guis.Gui;
+import dev.triumphteam.gui.guis.GuiItem;
+import dev.triumphteam.gui.guis.PaginatedGui;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
+import xyz.oribuin.auctionhouse.util.ItemBuilder;
 import xyz.oribuin.auctionhouse.util.PluginUtils;
-import xyz.oribuin.gui.BaseGui;
-import xyz.oribuin.gui.Gui;
-import xyz.oribuin.gui.Item;
-import xyz.oribuin.gui.PaginatedGui;
 
 import java.io.File;
 import java.io.IOException;
@@ -106,35 +108,14 @@ public abstract class OriMenu {
      * Create a paged GUI for the given player
      *
      * @param player    The player to create the GUI for
-     * @param pageSlots The slots for the page items
      * @return The created GUI
      */
-    public final PaginatedGui createPagedGUI(Player player, List<Integer> pageSlots) {
-        final PaginatedGui gui = new PaginatedGui(this.rows() * 9, this.format(player, this.get("gui-settings.title", this.getMenuName())), pageSlots);
-
-
-        // Prevent the player from opening the gui.
-        gui.setDefaultClickFunction(event -> {
-            event.setCancelled(true);
-            event.setResult(Event.Result.DENY);
-            ((Player) event.getWhoClicked()).updateInventory();
-        });
-
-        // Prevent the player from interacting with their inventory while the GUI is open
-        gui.setPersonalClickAction(event -> {
-            event.setCancelled(true);
-            event.setResult(Event.Result.DENY);
-            ((Player) event.getWhoClicked()).updateInventory();
-
-        });
-
-        // Prevent the player from dragging items.
-        gui.setDragAction(event -> {
-            event.setCancelled(true);
-            event.setResult(Event.Result.DENY);
-        });
-
-        return gui;
+    public final @NotNull PaginatedGui createPagedGUI(Player player) {
+        return Gui.paginated()
+                .rows(this.rows())
+                .title(this.format(player, this.get("gui-settings.title", this.getMenuName())))
+                .disableAllInteractions()
+                .create();
     }
 
     /**
@@ -144,30 +125,11 @@ public abstract class OriMenu {
      * @return The created GUI
      */
     public Gui createGUI(Player player) {
-        final Gui gui = new Gui(this.rows() * 9, this.format(player, this.get("gui-settings.title", this.getMenuName())));
-
-        // Prevent the player from opening the gui.
-        gui.setDefaultClickFunction(event -> {
-            event.setCancelled(true);
-            event.setResult(Event.Result.DENY);
-            ((Player) event.getWhoClicked()).updateInventory();
-        });
-
-        // Prevent the player from interacting with their inventory while the GUI is open
-        gui.setPersonalClickAction(event -> {
-            event.setCancelled(true);
-            event.setResult(Event.Result.DENY);
-            ((Player) event.getWhoClicked()).updateInventory();
-
-        });
-
-        // Prevent the player from dragging items.
-        gui.setDragAction(event -> {
-            event.setCancelled(true);
-            event.setResult(Event.Result.DENY);
-        });
-
-        return gui;
+        return Gui.gui()
+                .rows(this.rows())
+                .title(this.format(player, this.get("gui-settings.title", this.getMenuName())))
+                .disableAllInteractions()
+                .create();
     }
 
     /**
@@ -178,9 +140,7 @@ public abstract class OriMenu {
      * @param item The Item
      */
     public final void put(BaseGui gui, int slot, ItemStack item) {
-        gui.setItem(slot, item, inventoryClickEvent -> {
-            // Empty Function
-        });
+        gui.setItem(slot, new GuiItem(item));
     }
 
     /**
@@ -188,7 +148,7 @@ public abstract class OriMenu {
      *
      * @param gui      The GUI
      * @param itemPath The path to the item
-     * @param player  The item viewer
+     * @param player   The item viewer
      */
     public final void put(BaseGui gui, String itemPath, Player player) {
         this.put(gui, itemPath, player, StringPlaceholders.empty());
@@ -256,7 +216,7 @@ public abstract class OriMenu {
      * @param gui          The GUI
      * @param slot         The slot of the item
      * @param itemPath     The path to the item
-     * @param placeholders
+     * @param placeholders The placeholders to use
      */
     public final void put(BaseGui gui, int slot, String itemPath, Player viewer, StringPlaceholders placeholders) {
         this.put(gui, slot, itemPath, viewer, placeholders, inventoryClickEvent -> {
@@ -275,11 +235,11 @@ public abstract class OriMenu {
     public final void put(BaseGui gui, int slot, String itemPath, Player viewer, StringPlaceholders placeholders, Consumer<InventoryClickEvent> eventConsumer) {
         ItemStack item = PluginUtils.getItemStack(this.config, itemPath, viewer, placeholders);
         if (item == null)
-            item = new Item.Builder(Material.BARRIER)
+            item = new ItemBuilder(Material.BARRIER)
                     .setName(HexUtils.colorify("&cInvalid Material:" + itemPath + ".material"))
                     .create();
 
-        gui.setItem(slot, item, eventConsumer);
+        gui.setItem(slot, new GuiItem(item, eventConsumer::accept));
     }
 
     /**
@@ -289,7 +249,30 @@ public abstract class OriMenu {
      * @param text   The string to format
      * @return The formatted string
      */
-    public final String format(Player player, String text) {
+    public final Component format(Player player, String text) {
+        return Component.text(PluginUtils.format(player, text));
+    }
+
+    /**
+     * Format a string with placeholders and color codes
+     *
+     * @param player       The player to format the string for
+     * @param text         The text to format
+     * @param placeholders The placeholders to replace
+     * @return The formatted string
+     */
+    public final Component format(Player player, String text, StringPlaceholders placeholders) {
+        return Component.text(PluginUtils.format(player, text, placeholders));
+    }
+
+    /**
+     * Format a string with placeholders and color codes
+     *
+     * @param player The player to format the string for
+     * @param text   The text to format
+     * @return The formatted string
+     */
+    public final String formatString(Player player, String text) {
         return PluginUtils.format(player, text);
     }
 
@@ -301,7 +284,7 @@ public abstract class OriMenu {
      * @param placeholders The placeholders to replace
      * @return The formatted string
      */
-    public final String format(Player player, String text, StringPlaceholders placeholders) {
+    public final String formatString(Player player, String text, StringPlaceholders placeholders) {
         return PluginUtils.format(player, text, placeholders);
     }
 
@@ -358,10 +341,10 @@ public abstract class OriMenu {
      */
     public StringPlaceholders getPagePlaceholders(PaginatedGui gui) {
         return StringPlaceholders.builder()
-                .addPlaceholder("page", gui.getPage())
-                .addPlaceholder("total", Math.max(gui.getTotalPages(), 1))
-                .addPlaceholder("next", gui.getNextPage())
-                .addPlaceholder("previous", gui.getPrevPage())
+                .addPlaceholder("page", gui.getCurrentPageNum())
+                .addPlaceholder("total", Math.max(gui.getPagesNum(), 1))
+                .addPlaceholder("next", gui.getNextPageNum())
+                .addPlaceholder("previous", gui.getPrevPageNum())
                 .build();
     }
 

@@ -2,6 +2,8 @@ package xyz.oribuin.auctionhouse.gui;
 
 import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
+import dev.triumphteam.gui.guis.GuiItem;
+import dev.triumphteam.gui.guis.PaginatedGui;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -11,9 +13,8 @@ import org.bukkit.inventory.meta.ItemMeta;
 import xyz.oribuin.auctionhouse.manager.AuctionManager;
 import xyz.oribuin.auctionhouse.manager.LocaleManager;
 import xyz.oribuin.auctionhouse.manager.MenuManager;
+import xyz.oribuin.auctionhouse.util.ItemBuilder;
 import xyz.oribuin.auctionhouse.util.PluginUtils;
-import xyz.oribuin.gui.Item;
-import xyz.oribuin.gui.PaginatedGui;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -31,24 +32,21 @@ public class ViewMenu extends OriMenu {
     }
 
     public void open(Player player, OfflinePlayer seller) {
-        final PaginatedGui gui = this.createPagedGUI(player, this.getPageSlots());
-        List<Integer> borderSlots = this.parseList(this.get("gui-settings.border-slots", List.of("35-54")));
+        final PaginatedGui gui = this.createPagedGUI(player);
+
         final ItemStack item = PluginUtils.getItemStack(this.config, "border-item", player, StringPlaceholders.empty());
-        for (int slot : borderSlots) {
-            gui.setItem(slot, item, this.getEmptyConsumer());
-        }
+        List<Integer> borderSlots = this.parseList(this.get("gui-settings.border-slots", List.of("35-54")));
+        gui.setItem(borderSlots, new GuiItem(item));
 
-        this.put(gui, "next-page", player, event -> gui.next(player));
-        this.put(gui, "previous-page", player, event -> gui.previous(player));
+        this.put(gui, "next-page", player, event -> gui.next());
+        this.put(gui, "previous-page", player, event -> gui.previous());
+        this.put(gui, "refresh-menu", player, event -> this.setAuctions(gui, player, seller));
 
-        if (this.get("refresh-menu.enabled", true)) {
-            this.put(gui, "refresh-menu", player, event -> this.setAuctions(gui, player, seller));
-        }
 
         this.setAuctions(gui, player, seller);
 
         gui.open(player);
-        gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui, seller)));
+        gui.updateTitle(this.formatString(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui, seller)));
     }
 
 
@@ -67,14 +65,8 @@ public class ViewMenu extends OriMenu {
                 : this.get("auction-lore", List.of("Missing option auction-lore in /menus/view_menu.yml"));
 
         boolean loreBefore = this.get("lore-before", false);
+        gui.clearPageItems(true);
 
-        for (int slot : gui.getItemMap().keySet()) {
-            if (this.getPageSlots().contains(slot)) {
-                gui.getItemMap().remove(slot);
-            }
-        }
-
-        gui.getPageItems().clear();
         this.async(() -> {
 
             auctionManager.getActiveAuctionsBySeller(seller.getUniqueId()).forEach(value -> {
@@ -114,12 +106,12 @@ public class ViewMenu extends OriMenu {
                         .build();
 
 
-                lore = lore.stream().map(s -> this.format(player, s, auctionPls)).collect(Collectors.toList());
-                baseItem = new Item.Builder(baseItem)
+                lore = lore.stream().map(s -> PluginUtils.format(player, s, auctionPls)).collect(Collectors.toList());
+                baseItem = new ItemBuilder(baseItem)
                         .setLore(lore)
                         .create();
 
-                gui.addPageItem(baseItem, event -> {
+                gui.addItem(new GuiItem(baseItem, event -> {
 
                     if (event.isShiftClick() && player.hasPermission("auctionhouse.admin")) {
                         final AuctionManager manager = this.rosePlugin.getManager(AuctionManager.class);
@@ -140,11 +132,11 @@ public class ViewMenu extends OriMenu {
                     }
 
                     this.menuManager.get(ConfirmMenu.class).open(player, value);
-                });
+                }));
             });
 
             gui.update();
-            this.sync(() -> gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui, seller))));
+            this.sync(() -> gui.updateTitle(this.formatString(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui, seller))));
         });
     }
 
@@ -237,10 +229,10 @@ public class ViewMenu extends OriMenu {
 
     public StringPlaceholders getPagePlaceholders(PaginatedGui gui, OfflinePlayer player) {
         return StringPlaceholders.builder()
-                .addPlaceholder("page", gui.getPage())
-                .addPlaceholder("total", Math.max(gui.getTotalPages(), 1))
-                .addPlaceholder("next", gui.getNextPage())
-                .addPlaceholder("previous", gui.getPrevPage())
+                .addPlaceholder("page", gui.getCurrentPageNum())
+                .addPlaceholder("total", Math.max(gui.getPagesNum(), 1))
+                .addPlaceholder("next", gui.getNextPageNum())
+                .addPlaceholder("previous", gui.getPrevPageNum())
                 .addPlaceholder("player", player.getName())
                 .build();
     }

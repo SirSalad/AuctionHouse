@@ -3,8 +3,10 @@ package xyz.oribuin.auctionhouse;
 import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.manager.Manager;
 import dev.rosewood.rosegarden.utils.NMSUtil;
+import org.bukkit.plugin.PluginManager;
 import xyz.oribuin.auctionhouse.hook.PAPI;
 import xyz.oribuin.auctionhouse.hook.VaultHook;
+import xyz.oribuin.auctionhouse.listener.PlayerListeners;
 import xyz.oribuin.auctionhouse.manager.AuctionManager;
 import xyz.oribuin.auctionhouse.manager.CommandManager;
 import xyz.oribuin.auctionhouse.manager.ConfigurationManager;
@@ -39,6 +41,8 @@ public class AuctionHousePlugin extends RosePlugin {
             return;
         }
         // Register plugin listeners.
+        PluginManager pluginManager = this.getServer().getPluginManager();
+        pluginManager.registerEvents(new PlayerListeners(this), this);
 
         // Register plugin hooks
         VaultHook.hook();

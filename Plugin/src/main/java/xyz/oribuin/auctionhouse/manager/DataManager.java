@@ -8,7 +8,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 import xyz.oribuin.auctionhouse.auction.Auction;
+import xyz.oribuin.auctionhouse.auction.OfflineProfits;
 import xyz.oribuin.auctionhouse.database.migration._1_CreateInitialTables;
+import xyz.oribuin.auctionhouse.database.migration._2_CreateOfflineProfitsTable;
 import xyz.oribuin.auctionhouse.event.AuctionCreateEvent;
 
 import java.io.ByteArrayInputStream;
@@ -25,6 +27,7 @@ import java.util.UUID;
 public class DataManager extends AbstractDataManager {
 
     private final Map<Integer, Auction> auctionCache = new HashMap<>();
+    private final Map<UUID, OfflineProfits> offlineProfitsCache = new HashMap<>();
 
     public DataManager(RosePlugin rosePlugin) {
         super(rosePlugin);
@@ -35,6 +38,7 @@ public class DataManager extends AbstractDataManager {
      */
     public void loadAuctions() {
         this.auctionCache.clear();
+        this.offlineProfitsCache.clear();
 
         this.async(() -> this.databaseConnector.connect(connection -> {
             this.rosePlugin.getLogger().info("Loading auctions from database...");
@@ -63,6 +67,19 @@ public class DataManager extends AbstractDataManager {
             }
 
             this.rosePlugin.getLogger().info("Loaded " + this.auctionCache.size() + " auctions from the database.");
+            this.rosePlugin.getLogger().info("Loading offline profits from database...");
+
+            try (var statement = connection.prepareStatement("SELECT * FROM " + this.getTablePrefix() + "offline_profits")) {
+                ResultSet resultSet = statement.executeQuery();
+                while (resultSet.next()) {
+                    final UUID uuid = UUID.fromString(resultSet.getString("uuid"));
+                    final double profits = resultSet.getDouble("profits");
+                    final int totalSold = resultSet.getInt("totalSold");
+                    this.offlineProfitsCache.put(uuid, new OfflineProfits(profits, totalSold));
+                }
+            }
+
+            this.rosePlugin.getLogger().info("Loaded " + this.offlineProfitsCache.size() + " offline profits from the database.");
         }));
     }
 
@@ -158,8 +175,30 @@ public class DataManager extends AbstractDataManager {
 
     @Override
     public List<Class<? extends DataMigration>> getDataMigrations() {
-        return List.of(_1_CreateInitialTables.class);
+        return List.of(_1_CreateInitialTables.class, _2_CreateOfflineProfitsTable.class);
     }
+
+    /**
+     * Save the user's profits to the database.
+     *
+     * @param uuid    The user's UUID
+     * @param profits The profits
+     */
+    public void saveProfits(UUID uuid, OfflineProfits profits) {
+        this.offlineProfitsCache.put(uuid, profits);
+
+        this.async(() -> this.databaseConnector.connect(connection -> {
+            final String query = "REPLACE INTO " + this.getTablePrefix() + "offline_profits (uuid, profits, totalSold) VALUES (?, ?, ?)";
+
+            try (var statement = connection.prepareStatement(query)) {
+                statement.setString(1, uuid.toString());
+                statement.setDouble(2, profits.getProfit());
+                statement.setInt(3, profits.getSold());
+                statement.executeUpdate();
+            }
+        }));
+    }
+
 
     /**
      * Serializes an item stack to a byte array
@@ -194,6 +233,10 @@ public class DataManager extends AbstractDataManager {
 
     public Map<Integer, Auction> getAuctionCache() {
         return this.auctionCache;
+    }
+
+    public Map<UUID, OfflineProfits> getOfflineProfitsCache() {
+        return offlineProfitsCache;
     }
 
     /**

@@ -13,9 +13,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import xyz.oribuin.auctionhouse.hook.PAPI;
-import xyz.oribuin.auctionhouse.nms.NMSAdapter;
-import xyz.oribuin.auctionhouse.nms.NMSHandler;
-import xyz.oribuin.gui.Item;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -146,7 +143,7 @@ public final class PluginUtils {
                 .toArray(ItemFlag[]::new);
 
         // Build the item stack
-        Item.Builder builder = new Item.Builder(material)
+        ItemBuilder builder = new ItemBuilder(material)
                 .setName(format(player, get(config, path + ".name", null), placeholders))
                 .setLore(lore)
                 .setAmount(Math.max(get(config, path + ".amount", 1), 1))

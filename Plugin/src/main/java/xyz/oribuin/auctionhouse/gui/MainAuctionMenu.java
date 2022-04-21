@@ -2,6 +2,8 @@ package xyz.oribuin.auctionhouse.gui;
 
 import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
+import dev.triumphteam.gui.guis.GuiItem;
+import dev.triumphteam.gui.guis.PaginatedGui;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -12,10 +14,9 @@ import xyz.oribuin.auctionhouse.auction.AuctionSort;
 import xyz.oribuin.auctionhouse.manager.AuctionManager;
 import xyz.oribuin.auctionhouse.manager.LocaleManager;
 import xyz.oribuin.auctionhouse.manager.MenuManager;
+import xyz.oribuin.auctionhouse.util.ItemBuilder;
 import xyz.oribuin.auctionhouse.util.PluginUtils;
 import xyz.oribuin.auctionhouse.util.SortOption;
-import xyz.oribuin.gui.Item;
-import xyz.oribuin.gui.PaginatedGui;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,7 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -40,19 +40,17 @@ public class MainAuctionMenu extends OriMenu {
 
     public void open(Player player) {
         this.defaultSort = AuctionSort.match(this.get("sort-auctions.default", null)).orElse(AuctionSort.TIME_ASCENDING);
+        final PaginatedGui gui = this.createPagedGUI(player);
 
-        final PaginatedGui gui = this.createPagedGUI(player, this.getPageSlots());
-        List<Integer> borderSlots = this.parseList(this.get("gui-settings.border-slots", List.of("35-54")));
         final ItemStack item = PluginUtils.getItemStack(this.config, "border-item", player, StringPlaceholders.empty());
-        for (int slot : borderSlots) {
-            gui.setItem(slot, item, this.getEmptyConsumer());
-        }
+        List<Integer> borderSlots = this.parseList(this.get("gui-settings.border-slots", List.of("35-54")));
+        gui.setItem(borderSlots, new GuiItem(item));
 
         this.sortMap.putIfAbsent(player.getUniqueId(), new SortOption(this.defaultSort));
         this.setSort(gui, player);
-        this.put(gui, "next-page", player, event -> gui.next(player));
+        this.put(gui, "next-page", player, event -> gui.next());
         this.put(gui, "refresh-menu", player, event -> this.setAuctions(gui, player));
-        this.put(gui, "previous-page", player, event -> gui.previous(player));
+        this.put(gui, "previous-page", player, event -> gui.previous());
         this.put(gui, "auction-sellers", player, event -> this.menuManager.get(SellerMenu.class).open(player));
 
         this.put(gui, "sold-auctions", player, event -> this.menuManager.get(SoldAuctionsMenu.class).open(player));
@@ -62,7 +60,7 @@ public class MainAuctionMenu extends OriMenu {
         this.setAuctions(gui, player);
 
         gui.open(player);
-        gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui)));
+        this.sync(() -> gui.updateTitle(this.formatString(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui))));
     }
 
     /**
@@ -81,90 +79,86 @@ public class MainAuctionMenu extends OriMenu {
                 : this.get("auction-lore", List.of("Missing option auction-lore in /menus/main_menu.yml"));
 
         boolean loreBefore = this.get("lore-before", false);
+        gui.clearPageItems(true);
 
-        for (int slot : gui.getItemMap().keySet()) {
-            if (this.getPageSlots().contains(slot)) {
-                gui.getItemMap().remove(slot);
-            }
-        }
-
-        gui.getPageItems().clear();
         final List<Auction> auctions = new ArrayList<>(auctionManager.getActiveActions());
         if (sort.getComparator() != null) {
             auctions.sort(sort.getComparator());
         }
 
-       this.async(() -> {
-           auctions.forEach(value -> {
+        this.async(() -> {
+            auctions.forEach(value -> {
 
-               if (auctionManager.isAuctionExpired(value)) {
-                   auctionManager.expireAuction(value);
-                   return;
-               }
+                if (auctionManager.isAuctionExpired(value)) {
+                    auctionManager.expireAuction(value);
+                    return;
+                }
 
-               ItemStack baseItem = value.getItem().clone();
-               final ItemMeta meta = baseItem.getItemMeta();
-               if (meta == null) {
-                   return;
-               }
+                ItemStack baseItem = value.getItem().clone();
+                final ItemMeta meta = baseItem.getItemMeta();
+                if (meta == null) {
+                    return;
+                }
 
-               List<String> lore = new ArrayList<>();
+                List<String> lore = new ArrayList<>();
 
-               if (loreBefore) {
-                   lore.addAll(configLore);
-               }
+                if (loreBefore) {
+                    lore.addAll(configLore);
+                }
 
-               if (meta.getLore() != null) {
-                   lore.addAll(meta.getLore());
-               }
+                if (meta.getLore() != null) {
+                    lore.addAll(meta.getLore());
+                }
 
-               if (!loreBefore) {
-                   lore.addAll(configLore);
-               }
+                if (!loreBefore) {
+                    lore.addAll(configLore);
+                }
 
-               final String timeLeft = PluginUtils.formatTime(auctionManager.getTimeLeft(value));
-               final String formattedTime = timeLeft.equals("0") ? "Expired" : timeLeft;
+                final String timeLeft = PluginUtils.formatTime(auctionManager.getTimeLeft(value));
+                final String formattedTime = timeLeft.equals("0") ? "Expired" : timeLeft;
 
-               final StringPlaceholders auctionPls = StringPlaceholders.builder()
-                       .addPlaceholder("price", String.format("%.2f", value.getPrice()))
-                       .addPlaceholder("seller", Bukkit.getOfflinePlayer(value.getSeller()).getName())
-                       .addPlaceholder("time", formattedTime)
-                       .build();
+                final StringPlaceholders auctionPls = StringPlaceholders.builder()
+                        .addPlaceholder("price", String.format("%.2f", value.getPrice()))
+                        .addPlaceholder("seller", Bukkit.getOfflinePlayer(value.getSeller()).getName())
+                        .addPlaceholder("time", formattedTime)
+                        .build();
 
 
-               lore = lore.stream().map(s -> this.format(player, s, auctionPls)).collect(Collectors.toList());
-               baseItem = new Item.Builder(baseItem)
-                       .setLore(lore)
-                       .create();
+                lore = lore.stream().map(s -> PluginUtils.format(player, s, auctionPls)).collect(Collectors.toList());
+                baseItem = new ItemBuilder(baseItem)
+                        .setLore(lore)
+                        .create();
 
-               ItemStack finalBaseItem = baseItem;
-               gui.addPageItem(finalBaseItem, event -> {
-                   if (event.isShiftClick() && player.hasPermission("auctionhouse.admin")) {
-                       final AuctionManager manager = this.rosePlugin.getManager(AuctionManager.class);
-                       if (event.isLeftClick())
-                           manager.expireAuction(value);
+                ItemStack finalBaseItem = baseItem;
+                gui.addItem(new GuiItem(finalBaseItem, event -> {
+                    if (event.isShiftClick() && player.hasPermission("auctionhouse.admin")) {
+                        final AuctionManager manager = this.rosePlugin.getManager(AuctionManager.class);
+                        if (event.isLeftClick())
+                            manager.expireAuction(value);
 
-                       else if (event.isRightClick())
-                           manager.deleteAuction(value);
+                        else if (event.isRightClick())
+                            manager.deleteAuction(value);
 
-                       this.sync(() -> this.setAuctions(gui, player));
-                       return;
-                   }
+                        this.sync(() -> this.setAuctions(gui, player));
+                        return;
+                    }
 
-                   if (player.getUniqueId() == value.getSeller()) {
-                       player.closeInventory();
-                       this.rosePlugin.getManager(LocaleManager.class).sendMessage(player, "command-buy-own-auction");
-                       return;
-                   }
+                    System.out.println("Player uuid " + player.getUniqueId());
+                    System.out.println("Seller uuid " + value.getSeller());
+                    if (player.getUniqueId() == value.getSeller()) {
+                        player.closeInventory();
+                        this.rosePlugin.getManager(LocaleManager.class).sendMessage(player, "command-buy-own-auction");
+                        return;
+                    }
 
-                   this.menuManager.get(ConfirmMenu.class).open(player, value);
-               });
-           });
+                    this.menuManager.get(ConfirmMenu.class).open(player, value);
+                }));
+            });
 
-           gui.update();
-           // opening a gui cannot be async iirc
-           this.sync(() -> gui.updateTitle(this.format(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui))));
-       });
+            gui.update();
+            // opening a gui cannot be async iirc
+            this.sync(() -> gui.updateTitle(this.formatString(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui))));
+        });
     }
 
     /**

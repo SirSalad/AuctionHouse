@@ -20,7 +20,7 @@ public class _1_CreateInitialTables extends DataMigration {
         // Create the auction table
         String createAuctionTable = "CREATE TABLE " + tablePrefix + "auctions (" +
                 "id INTEGER PRIMARY KEY " + autoIncrement + ", " +
-                "seller VARCHAR(16) NOT NULL, " +
+                "seller VARCHAR(36) NOT NULL, " +
                 "item VARBINARY(2456) NOT NULL, " +
                 "price DOUBLE NOT NULL, " +
                 "buyer VARCHAR(36) NULL, " +
@@ -34,4 +34,5 @@ public class _1_CreateInitialTables extends DataMigration {
             statement.executeUpdate();
         }
     }
+
 }
