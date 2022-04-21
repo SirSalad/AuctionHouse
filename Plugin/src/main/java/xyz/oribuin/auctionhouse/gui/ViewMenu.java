@@ -126,7 +126,7 @@ public class ViewMenu extends OriMenu {
                     }
 
                     if (player.getUniqueId() == value.getSeller()) {
-                        player.closeInventory();
+                        gui.close(player);
                         this.rosePlugin.getManager(LocaleManager.class).sendMessage(player, "command-buy-own-auction");
                         return;
                     }

@@ -143,10 +143,8 @@ public class MainAuctionMenu extends OriMenu {
                         return;
                     }
 
-                    System.out.println("Player uuid " + player.getUniqueId());
-                    System.out.println("Seller uuid " + value.getSeller());
                     if (player.getUniqueId() == value.getSeller()) {
-                        player.closeInventory();
+                        gui.close(player);
                         this.rosePlugin.getManager(LocaleManager.class).sendMessage(player, "command-buy-own-auction");
                         return;
                     }

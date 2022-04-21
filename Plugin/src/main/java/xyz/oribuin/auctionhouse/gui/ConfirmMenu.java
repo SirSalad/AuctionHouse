@@ -33,13 +33,13 @@ public class ConfirmMenu extends OriMenu {
 
         for (int slot : confirmSlots) {
             this.put(gui, slot, "confirm-item", player, placeholders, event -> {
-                player.closeInventory();
+                gui.close(player);
                 auctionManager.buyAuction(player, auction.getId());
             });
         }
 
         for (int slot : cancelSlots) {
-            this.put(gui, slot, "cancel-item", player, placeholders, event -> player.closeInventory());
+            this.put(gui, slot, "cancel-item", player, placeholders, event -> gui.close(player));
         }
 
         if (this.get("auction-item.enabled", true)) {
