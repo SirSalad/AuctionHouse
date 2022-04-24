@@ -48,9 +48,17 @@ public class MainAuctionMenu extends OriMenu {
 
         this.sortMap.putIfAbsent(player.getUniqueId(), new SortOption(this.defaultSort));
         this.setSort(gui, player);
-        this.put(gui, "next-page", player, event -> gui.next());
+        this.put(gui, "next-page", player, event -> {
+            gui.next();
+            gui.updateTitle(this.formatString(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui)));
+        });
+
         this.put(gui, "refresh-menu", player, event -> this.setAuctions(gui, player));
-        this.put(gui, "previous-page", player, event -> gui.previous());
+        this.put(gui, "previous-page", player, event -> {
+            gui.previous();
+            gui.updateTitle(this.formatString(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui)));
+        });
+
         this.put(gui, "auction-sellers", player, event -> this.menuManager.get(SellerMenu.class).open(player));
 
         this.put(gui, "sold-auctions", player, event -> this.menuManager.get(SoldAuctionsMenu.class).open(player));

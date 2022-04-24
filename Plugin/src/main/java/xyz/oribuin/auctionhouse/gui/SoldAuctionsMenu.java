@@ -38,9 +38,17 @@ public class SoldAuctionsMenu extends OriMenu {
         List<Integer> borderSlots = this.parseList(this.get("gui-settings.border-slots", List.of("35-54")));
         gui.setItem(borderSlots, new GuiItem(item));
 
-        this.put(gui, "next-page", player, event -> gui.next());
-        this.put(gui, "previous-page", player, event -> gui.previous());
+        this.put(gui, "next-page", player, event -> {
+            gui.next();
+            gui.updateTitle(this.formatString(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui)));
+        });
+
         this.put(gui, "refresh-menu", player, event -> this.setAuctions(gui, player));
+        this.put(gui, "previous-page", player, event -> {
+            gui.previous();
+            gui.updateTitle(this.formatString(player, this.get("gui-settings.title", "gui-settings.title"), this.getPagePlaceholders(gui)));
+        });
+
 
         this.put(gui, "main-auctions", player, event -> this.menuManager.get(MainAuctionMenu.class).open(player));
         this.put(gui, "my-auctions", player, event -> this.menuManager.get(PersonalAuctionsMenu.class).open(player));
