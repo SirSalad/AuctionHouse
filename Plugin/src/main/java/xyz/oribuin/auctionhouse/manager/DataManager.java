@@ -3,15 +3,14 @@ package xyz.oribuin.auctionhouse.manager;
 import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.database.DataMigration;
 import dev.rosewood.rosegarden.manager.AbstractDataManager;
-import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.Consumer;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 import xyz.oribuin.auctionhouse.auction.Auction;
 import xyz.oribuin.auctionhouse.auction.OfflineProfits;
 import xyz.oribuin.auctionhouse.database.migration._1_CreateInitialTables;
 import xyz.oribuin.auctionhouse.database.migration._2_CreateOfflineProfitsTable;
-import xyz.oribuin.auctionhouse.event.AuctionCreateEvent;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -90,14 +89,8 @@ public class DataManager extends AbstractDataManager {
      * @param item  The item to auction
      * @param price The price of the item
      */
-    public void createAuction(UUID uuid, ItemStack item, double price) {
+    public void createAuction(UUID uuid, ItemStack item, double price, Consumer<Auction> callback) {
         final Auction auction = new Auction(-1, uuid, item, price);
-
-        AuctionCreateEvent event = new AuctionCreateEvent(Bukkit.getPlayer(uuid), auction);
-        Bukkit.getPluginManager().callEvent(event);
-        if (event.isCancelled())
-            return;
-
         auction.setCreatedTime(System.currentTimeMillis());
 
         this.async(() -> this.databaseConnector.connect(connection -> {
@@ -113,6 +106,7 @@ public class DataManager extends AbstractDataManager {
                     if (resultSet.next()) {
                         auction.setId(resultSet.getInt(1));
                         this.saveAuction(auction);
+                        this.rosePlugin.getServer().getScheduler().runTask(this.rosePlugin, () -> callback.accept(auction));
                     }
                 }
             }

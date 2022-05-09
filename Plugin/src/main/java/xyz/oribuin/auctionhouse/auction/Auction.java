@@ -1,5 +1,7 @@
 package xyz.oribuin.auctionhouse.auction;
 
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.UUID;
@@ -49,6 +51,10 @@ public class Auction {
         return seller;
     }
 
+    public OfflinePlayer getSellerPlayer() {
+        return Bukkit.getOfflinePlayer(this.seller);
+    }
+
     public ItemStack getItem() {
         return item;
     }
@@ -59,6 +65,10 @@ public class Auction {
 
     public UUID getBuyer() {
         return buyer;
+    }
+
+    public OfflinePlayer getBuyerPlayer() {
+        return Bukkit.getOfflinePlayer(this.buyer);
     }
 
     public void setBuyer(UUID buyer) {

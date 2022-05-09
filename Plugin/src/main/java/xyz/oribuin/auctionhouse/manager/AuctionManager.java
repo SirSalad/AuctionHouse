@@ -10,6 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import xyz.oribuin.auctionhouse.auction.Auction;
 import xyz.oribuin.auctionhouse.auction.OfflineProfits;
+import xyz.oribuin.auctionhouse.event.AuctionCreateEvent;
 import xyz.oribuin.auctionhouse.event.AuctionSoldEvent;
 import xyz.oribuin.auctionhouse.hook.VaultHook;
 import xyz.oribuin.auctionhouse.manager.ConfigurationManager.Settings;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public class AuctionManager extends Manager {
@@ -134,12 +136,18 @@ public class AuctionManager extends Manager {
 
         this.listingCooldown.put(player.getUniqueId(), System.currentTimeMillis());
 
-        this.data.createAuction(player.getUniqueId(), item, price);
-        if (listPrice > 0) {
-            VaultHook.getEconomy().withdrawPlayer(player, listPrice);
-        }
+        this.data.createAuction(player.getUniqueId(), item, price, auction -> {
+            AuctionCreateEvent event = new AuctionCreateEvent(player, auction);
+            Bukkit.getPluginManager().callEvent(event);
+            if (event.isCancelled())
+                return;
 
-        locale.sendMessage(player, "command-sell-success", StringPlaceholders.single("price", String.format("%.2f", price)));
+            if (listPrice > 0) {
+                VaultHook.getEconomy().withdrawPlayer(player, listPrice);
+            }
+
+            locale.sendMessage(player, "command-sell-success", StringPlaceholders.single("price", String.format("%.2f", price)));
+        });
     }
 
     /**
@@ -184,31 +192,38 @@ public class AuctionManager extends Manager {
             return;
         }
 
-        player.getInventory().addItem(item);
-
         auction.setSoldTime(System.currentTimeMillis());
         auction.setSold(true);
         auction.setSoldPrice(buyPrice);
         auction.setBuyer(player.getUniqueId());
 
-        Bukkit.getPluginManager().callEvent(new AuctionSoldEvent(player, auction));
+        double finalBuyPrice = buyPrice;
 
-        this.data.saveAuction(auction);
-        VaultHook.getEconomy().withdrawPlayer(player, auction.getPrice());
-        VaultHook.getEconomy().depositPlayer(Bukkit.getOfflinePlayer(auction.getSeller()), buyPrice);
+        // Give the player the money when the auction is saved
+        CompletableFuture.runAsync(() -> this.data.saveAuction(auction)).thenRun(() -> {
+            OfflinePlayer seller = auction.getSellerPlayer();
 
-        final StringPlaceholders placeholders = StringPlaceholders.builder()
-                .addPlaceholder("price", String.format("%.2f", auction.getPrice()))
-                .addPlaceholder("seller", Bukkit.getOfflinePlayer(auction.getSeller()).getName())
-                .addPlaceholder("buyer", player.getName())
-                .build();
+            player.getInventory().addItem(item);
 
-        Player seller = Bukkit.getPlayer(auction.getSeller());
-        if (seller != null) {
-            locale.sendMessage(seller, "auction-sold", placeholders);
-        }
-        locale.sendMessage(player, "command-buy-success", placeholders);
+            VaultHook.getEconomy().withdrawPlayer(player, auction.getPrice());
+            VaultHook.getEconomy().depositPlayer(seller, finalBuyPrice);
 
+            final StringPlaceholders placeholders = StringPlaceholders.builder()
+                    .addPlaceholder("price", String.format("%.2f", auction.getPrice()))
+                    .addPlaceholder("seller", seller.getName())
+                    .addPlaceholder("buyer", player.getName())
+                    .build();
+
+
+            Player sellerPlayer = seller.getPlayer();
+            if (sellerPlayer != null) {
+                locale.sendMessage(sellerPlayer, "auction-sold", placeholders);
+            }
+
+            locale.sendMessage(player, "command-buy-success", placeholders);
+            AuctionSoldEvent event = new AuctionSoldEvent(player, auction);
+            Bukkit.getPluginManager().callEvent(event);
+        });
     }
 
     /**
@@ -363,8 +378,8 @@ public class AuctionManager extends Manager {
     public List<Auction> getSoldAuctionsBySeller(UUID uuid) {
         return this.data.getAuctionCache().values()
                 .stream()
-                .filter(auction -> auction.getSeller().equals(uuid))
                 .filter(Auction::isSold)
+                .filter(auction -> auction.getSeller().equals(uuid))
                 .collect(Collectors.toList());
     }
 
