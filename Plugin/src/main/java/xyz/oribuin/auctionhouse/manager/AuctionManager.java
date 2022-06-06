@@ -165,6 +165,12 @@ public class AuctionManager extends Manager {
             return;
         }
 
+        // Stop the player from buying their own auction
+        if (optionalAuction.get().getSeller().equals(player.getUniqueId())) {
+            locale.sendMessage(player, "command-buy-own-auction");
+            return;
+        }
+
         final Auction auction = optionalAuction.get();
 
         // Make sure the auction is has not been sold or expired

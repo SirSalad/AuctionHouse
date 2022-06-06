@@ -26,7 +26,6 @@ import java.util.UUID;
 public class ItemBuilder {
 
     private final ItemStack item;
-    private ItemMeta meta;
 
     public ItemBuilder(Material material) {
         this.item = new ItemStack(material);
@@ -48,7 +47,6 @@ public class ItemBuilder {
             return this;
 
         meta.setDisplayName(text);
-        this.meta = meta;
         item.setItemMeta(meta);
 
         return this;
@@ -290,11 +288,7 @@ public class ItemBuilder {
     }
 
     public ItemBuilder addPotionEffect(PotionEffectType effectType, int duration, int amp) {
-        if (!(this.item.getItemMeta() instanceof PotionMeta))
-            return this;
-
-        PotionMeta meta = (PotionMeta) this.item.getItemMeta();
-        if (meta == null)
+        if (!(this.item.getItemMeta() instanceof PotionMeta meta))
             return this;
 
         meta.addCustomEffect(new PotionEffect(effectType, duration, amp), true);
