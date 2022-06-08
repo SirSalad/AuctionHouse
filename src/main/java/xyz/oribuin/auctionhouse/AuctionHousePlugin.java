@@ -54,10 +54,7 @@ public class AuctionHousePlugin extends RosePlugin {
 
         // Register plugin hooks
         VaultHook.hook();
-
-        if (this.getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            new PAPI(this).register();
-        }
+        new PAPI(this).register();
 
     }
 
