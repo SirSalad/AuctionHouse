@@ -7,7 +7,6 @@ import dev.rosewood.rosegarden.manager.AbstractConfigurationManager;
 import xyz.oribuin.auctionhouse.AuctionHousePlugin;
 
 import java.util.Arrays;
-import java.util.List;
 
 public class ConfigurationManager extends AbstractConfigurationManager {
 

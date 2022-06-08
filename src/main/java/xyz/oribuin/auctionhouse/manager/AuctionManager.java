@@ -3,6 +3,7 @@ package xyz.oribuin.auctionhouse.manager;
 import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.manager.Manager;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
+import io.github.bananapuncher714.nbteditor.NBTEditor;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -14,7 +15,6 @@ import xyz.oribuin.auctionhouse.event.AuctionCreateEvent;
 import xyz.oribuin.auctionhouse.event.AuctionSoldEvent;
 import xyz.oribuin.auctionhouse.hook.VaultHook;
 import xyz.oribuin.auctionhouse.manager.ConfigurationManager.Settings;
-import xyz.oribuin.auctionhouse.nms.NMSAdapter;
 import xyz.oribuin.auctionhouse.util.PluginUtils;
 
 import java.time.Duration;
@@ -121,7 +121,7 @@ public class AuctionManager extends Manager {
         // Check if the item's NBT is allowed to be listed
         boolean hasDisabledNBT = Settings.DISABLED_NBT.getStringList()
                 .stream()
-                .anyMatch(nbt -> NMSAdapter.getHandler().hasTag(item, nbt));
+                .anyMatch(nbt -> NBTEditor.contains(item, nbt));
 
         if (hasDisabledNBT) {
             locale.sendMessage(player, "command-sell-disabled-item");

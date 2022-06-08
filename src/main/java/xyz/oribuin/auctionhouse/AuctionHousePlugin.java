@@ -40,6 +40,14 @@ public class AuctionHousePlugin extends RosePlugin {
             this.getServer().getPluginManager().disablePlugin(this);
             return;
         }
+
+        // Check if PAPI is installed
+        if (!this.getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            this.getLogger().severe("PlaceholderAPI is not installed or not enabled, Disabling plugin!");
+            this.getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
         // Register plugin listeners.
         PluginManager pluginManager = this.getServer().getPluginManager();
         pluginManager.registerEvents(new PlayerListeners(this), this);
@@ -47,7 +55,7 @@ public class AuctionHousePlugin extends RosePlugin {
         // Register plugin hooks
         VaultHook.hook();
 
-        if (PAPI.isEnabled()) {
+        if (this.getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             new PAPI(this).register();
         }
 

@@ -1,7 +1,6 @@
 package xyz.oribuin.auctionhouse.event;
 
 import org.bukkit.entity.Player;
-import org.bukkit.event.Cancellable;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.player.PlayerEvent;
 import xyz.oribuin.auctionhouse.auction.Auction;
