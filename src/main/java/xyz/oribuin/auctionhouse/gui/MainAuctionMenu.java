@@ -2,6 +2,7 @@ package xyz.oribuin.auctionhouse.gui;
 
 import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
+import dev.triumphteam.gui.components.ScrollType;
 import dev.triumphteam.gui.guis.GuiItem;
 import dev.triumphteam.gui.guis.PaginatedGui;
 import org.bukkit.Bukkit;
@@ -40,7 +41,9 @@ public class MainAuctionMenu extends OriMenu {
 
     public void open(Player player) {
         this.defaultSort = AuctionSort.match(this.get("sort-auctions.default", null)).orElse(AuctionSort.TIME_ASCENDING);
-        final PaginatedGui gui = this.createPagedGUI(player);
+        boolean shouldScroll = this.get("gui-settings.should-scroll", false);
+        ScrollType scrollType = ScrollType.valueOf(this.get("gui-settings.scroll-type", "HORIZONTAL"));
+        final PaginatedGui gui = shouldScroll ? this.createScrollingGui(player, scrollType) : this.createPagedGUI(player);
 
         final ItemStack item = PluginUtils.getItemStack(this.config, "border-item", player, StringPlaceholders.empty());
         List<Integer> borderSlots = this.parseList(this.get("gui-settings.border-slots", List.of("35-54")));
@@ -191,11 +194,6 @@ public class MainAuctionMenu extends OriMenu {
     }
 
     @Override
-    public int rows() {
-        return this.get("gui-settings.rows", 6);
-    }
-
-    @Override
     public Map<String, Object> getDefaultValues() {
         return new LinkedHashMap<>() {{
             this.put("#0", "GUI Settings");
@@ -203,6 +201,8 @@ public class MainAuctionMenu extends OriMenu {
             this.put("gui-settings.rows", 6);
             this.put("gui-settings.page-slots", List.of("9-44"));
             this.put("gui-settings.border-slots", List.of("0-8", "45-53"));
+            this.put("gui-settings.should-scroll", false);
+            this.put("gui-settings.scroll-type", "HORIZONTAL");
 
             this.put("#1", "Auction Lore Settings");
             this.put("auction-lore", List.of(

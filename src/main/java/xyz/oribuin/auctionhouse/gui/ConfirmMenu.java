@@ -55,10 +55,6 @@ public class ConfirmMenu extends OriMenu {
         gui.open(player);
     }
 
-    @Override
-    public int rows() {
-        return this.get("gui-settings.rows", 1);
-    }
 
     @Override
     public Map<String, Object> getDefaultValues() {

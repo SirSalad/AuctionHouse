@@ -4,10 +4,12 @@ import dev.rosewood.rosegarden.RosePlugin;
 import dev.rosewood.rosegarden.config.CommentedFileConfiguration;
 import dev.rosewood.rosegarden.utils.HexUtils;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
+import dev.triumphteam.gui.components.ScrollType;
 import dev.triumphteam.gui.guis.BaseGui;
 import dev.triumphteam.gui.guis.Gui;
 import dev.triumphteam.gui.guis.GuiItem;
 import dev.triumphteam.gui.guis.PaginatedGui;
+import dev.triumphteam.gui.guis.ScrollingGui;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Color;
 import org.bukkit.Material;
@@ -33,11 +35,6 @@ public abstract class OriMenu {
     public OriMenu(RosePlugin rosePlugin) {
         this.rosePlugin = rosePlugin;
     }
-
-    /**
-     * Get the amount of rows for the gui
-     */
-    public abstract int rows();
 
     /**
      * Get the default config values for the GUI
@@ -107,12 +104,12 @@ public abstract class OriMenu {
     /**
      * Create a paged GUI for the given player
      *
-     * @param player    The player to create the GUI for
+     * @param player The player to create the GUI for
      * @return The created GUI
      */
     public final @NotNull PaginatedGui createPagedGUI(Player player) {
         return Gui.paginated()
-                .rows(this.rows())
+                .rows(this.get("gui-settings.rows", 6))
                 .title(this.format(player, this.get("gui-settings.title", this.getMenuName())))
                 .disableAllInteractions()
                 .create();
@@ -124,9 +121,25 @@ public abstract class OriMenu {
      * @param player The player to create the GUI for
      * @return The created GUI
      */
-    public Gui createGUI(Player player) {
+    public final @NotNull Gui createGUI(Player player) {
         return Gui.gui()
-                .rows(this.rows())
+                .rows(this.get("gui-settings.rows", 6))
+                .title(this.format(player, this.get("gui-settings.title", this.getMenuName())))
+                .disableAllInteractions()
+                .create();
+    }
+
+    /**
+     * Scrolling gui for the given player
+     *
+     * @param player The player to create the GUI for
+     * @return The created GUI
+     */
+    public final @NotNull ScrollingGui createScrollingGui(Player player, ScrollType scrollType) {
+        return Gui.scrolling()
+                .scrollType(scrollType)
+                .rows(this.get("gui-settings.rows", 6))
+                .pageSize(0)
                 .title(this.format(player, this.get("gui-settings.title", this.getMenuName())))
                 .disableAllInteractions()
                 .create();
