@@ -23,6 +23,7 @@ public class ConfigurationManager extends AbstractConfigurationManager {
         LIST_COOLDOWN("list-cooldown", 10.0, "The cooldown in seconds between listing items"),
         LIST_TIME("list-time", "1d", "The time before an auction expires"),
         LIST_TAX("list-tax", 0.05, "The tax on the price of listing an item"),
+        AUCTION_LOGGING("auction-logging", false, "Should auction logs be logged?"),
 
         DISABLED_MATERIALS("disabled-materials", Arrays.asList("BEDROCK", "END_PORTAL_FRAME"), "The materials that are disabled from being listed"),
         DISABLED_NBT("disabled-nbt", Arrays.asList("nbt-tag-1", "nbt-tag-2"), "The NBT tags that are disabled from being listed"),

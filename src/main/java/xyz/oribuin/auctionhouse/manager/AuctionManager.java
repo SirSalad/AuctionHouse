@@ -15,6 +15,7 @@ import xyz.oribuin.auctionhouse.event.AuctionCreateEvent;
 import xyz.oribuin.auctionhouse.event.AuctionSoldEvent;
 import xyz.oribuin.auctionhouse.hook.VaultHook;
 import xyz.oribuin.auctionhouse.manager.ConfigurationManager.Settings;
+import xyz.oribuin.auctionhouse.manager.LogManager.LogMessage;
 import xyz.oribuin.auctionhouse.util.PluginUtils;
 
 import java.time.Duration;
@@ -31,6 +32,7 @@ public class AuctionManager extends Manager {
 
     private final Map<UUID, Long> listingCooldown = new HashMap<>();
     private DataManager data;
+    private LogManager logManager;
 
     public AuctionManager(RosePlugin rosePlugin) {
         super(rosePlugin);
@@ -38,6 +40,7 @@ public class AuctionManager extends Manager {
 
     @Override
     public void reload() {
+        this.logManager = this.rosePlugin.getManager(LogManager.class);
         this.data = this.rosePlugin.getManager(DataManager.class);
         this.data.loadAuctions();
     }
@@ -142,6 +145,8 @@ public class AuctionManager extends Manager {
             if (event.isCancelled())
                 return;
 
+            this.logManager.addLogMessage(LogMessage.AUCTION_CREATED, auction);
+
             if (listPrice > 0) {
                 VaultHook.getEconomy().withdrawPlayer(player, listPrice);
             }
@@ -227,6 +232,8 @@ public class AuctionManager extends Manager {
             }
 
             locale.sendMessage(player, "command-buy-success", placeholders);
+            this.logManager.addLogMessage(LogMessage.AUCTION_SOLD, auction);
+
             AuctionSoldEvent event = new AuctionSoldEvent(player, auction);
             Bukkit.getPluginManager().callEvent(event);
         });
@@ -242,6 +249,9 @@ public class AuctionManager extends Manager {
             return;
         }
 
+        this.logManager.addLogMessage(LogMessage.AUCTION_EXPIRED, auction);
+
+
         auction.setExpired(true);
         auction.setSold(false);
         auction.setExpiredTime(System.currentTimeMillis());
@@ -254,6 +264,8 @@ public class AuctionManager extends Manager {
      * @param auction The auction to delete
      */
     public void deleteAuction(Auction auction) {
+        this.logManager.addLogMessage(LogMessage.AUCTION_DELETED, auction);
+
         auction.setExpired(true);
         auction.setSold(true);
         this.data.deleteAuction(auction);

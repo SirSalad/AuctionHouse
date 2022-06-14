@@ -4,6 +4,7 @@ import dev.rosewood.rosegarden.config.CommentedConfigurationSection;
 import dev.rosewood.rosegarden.config.CommentedFileConfiguration;
 import dev.rosewood.rosegarden.utils.HexUtils;
 import dev.rosewood.rosegarden.utils.StringPlaceholders;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Material;
@@ -12,6 +13,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import xyz.oribuin.auctionhouse.hook.PAPI;
 
 import java.util.ArrayList;
@@ -226,6 +228,15 @@ public final class PluginUtils {
         }
 
         return Color.fromRGB(awtColor.getRed(), awtColor.getGreen(), awtColor.getBlue());
+    }
+
+    public static String getItemName(ItemStack item) {
+        String displayName = item.getType().name();
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null && meta.hasDisplayName())
+            displayName = meta.getDisplayName();
+
+        return ChatColor.stripColor(displayName);
     }
 
 }

@@ -12,6 +12,7 @@ import xyz.oribuin.auctionhouse.manager.CommandManager;
 import xyz.oribuin.auctionhouse.manager.ConfigurationManager;
 import xyz.oribuin.auctionhouse.manager.DataManager;
 import xyz.oribuin.auctionhouse.manager.LocaleManager;
+import xyz.oribuin.auctionhouse.manager.LogManager;
 
 import java.util.List;
 
@@ -65,7 +66,7 @@ public class AuctionHousePlugin extends RosePlugin {
 
     @Override
     protected List<Class<? extends Manager>> getManagerLoadPriority() {
-        return List.of(AuctionManager.class);
+        return List.of(LogManager.class, AuctionManager.class);
     }
 
     public static AuctionHousePlugin getInstance() {
