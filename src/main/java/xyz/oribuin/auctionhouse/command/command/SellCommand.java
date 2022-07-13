@@ -12,12 +12,14 @@ import xyz.oribuin.auctionhouse.manager.AuctionManager;
 import xyz.oribuin.auctionhouse.manager.LocaleManager;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class SellCommand extends RoseCommand {
 
-    final List<UUID> confirmList = new ArrayList<>();
+    private final Map<UUID, Double> confirmMap = new HashMap<>();
 
     public SellCommand(RosePlugin rosePlugin, RoseCommandWrapper parent) {
         super(rosePlugin, parent);
@@ -35,13 +37,14 @@ public class SellCommand extends RoseCommand {
         }
 
         // Make the player confirm they want to sell their item
-        if (!this.confirmList.contains(player.getUniqueId())) {
+        if (!this.confirmMap.containsKey(player.getUniqueId()) || this.confirmMap.getOrDefault(player.getUniqueId(), 0.0) != price.doubleValue()) {
             locale.sendMessage(player, "command-sell-confirm", StringPlaceholders.single("price", String.format("%.2f", price)));
-            this.confirmList.add(player.getUniqueId());
+            this.confirmMap.put(player.getUniqueId(), price);
             return;
         }
 
-        this.confirmList.remove(player.getUniqueId());
+
+        this.confirmMap.remove(player.getUniqueId());
         ItemStack item = player.getInventory().getItemInMainHand().clone();
         auctionManager.createAuction(player, item, price);
     }
