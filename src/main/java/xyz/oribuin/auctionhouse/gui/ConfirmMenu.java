@@ -66,7 +66,7 @@ public class ConfirmMenu extends OriMenu {
             this.put("#1", "Confirm Item");
             this.put("confirm-item.material", "LIME_STAINED_GLASS_PANE");
             this.put("confirm-item.name", "#00B4DB&lConfirm Purchase");
-            this.put("confirm-item.lore", List.of(" &f| &7Click to confirm to", " &f| &7purchase this item for #00B4DB&l$%price%&7!"));
+            this.put("confirm-item.lore", List.of(" &f| &7Click to confirm to", " &f| &7purchase this item for #00B4DB&l%price%&7!"));
             this.put("confirm-item.slots", List.of("0-3"));
             this.put("confirm-item.glow", true);
 

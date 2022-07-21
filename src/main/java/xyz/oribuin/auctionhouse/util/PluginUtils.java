@@ -16,13 +16,22 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import xyz.oribuin.auctionhouse.hook.PAPI;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 public final class PluginUtils {
 
+
+    final DecimalFormat formatter;
+
+    private PluginUtils() {
+
+        this.formatter = new DecimalFormat("#,###.##");
+    }
 
     // parse a string such as 1w 2d 3h 4m 5s into milliseconds
     public static long parseTime(String time) {
@@ -54,6 +63,10 @@ public final class PluginUtils {
         }
 
         return totalSeconds * 1000;
+    }
+
+    public static String formatCurrency(double amount) {
+        return DecimalFormat.getCurrencyInstance(Locale.US).format(amount);
     }
 
     /**

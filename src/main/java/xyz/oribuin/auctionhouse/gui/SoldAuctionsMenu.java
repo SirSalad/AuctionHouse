@@ -107,7 +107,7 @@ public class SoldAuctionsMenu extends OriMenu {
                 }
 
                 final StringPlaceholders auctionPls = StringPlaceholders.builder()
-                        .addPlaceholder("price", String.format("%.2f", value.getPrice()))
+                        .addPlaceholder("price", PluginUtils.formatCurrency(value.getPrice()))
                         .addPlaceholder("buyer", Bukkit.getOfflinePlayer(value.getBuyer()).getName())
                         .addPlaceholder("sold", dateFormat.format(new Date(value.getSoldTime())))
                         .build();
@@ -144,7 +144,7 @@ public class SoldAuctionsMenu extends OriMenu {
             this.put("#1", "Auction Lore Settings");
             this.put("auction-lore", List.of(
                     " &8------ #00B4DB&lSelling Item &8------",
-                    " &f| &7Price: &f$%price%",
+                    " &f| &7Price: &f%price%",
                     " &f| &7Sold At: &f%sold%",
                     " &f| &7Buyer: &f%buyer%",
                     " &f|",

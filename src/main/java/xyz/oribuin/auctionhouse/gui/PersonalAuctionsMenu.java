@@ -102,7 +102,7 @@ public class PersonalAuctionsMenu extends OriMenu {
                 final String formattedTime = timeLeft.equals("0") ? "Expired" : timeLeft;
 
                 final StringPlaceholders auctionPls = StringPlaceholders.builder()
-                        .addPlaceholder("price", String.format("%.2f", value.getPrice()))
+                        .addPlaceholder("price", PluginUtils.formatCurrency(value.getPrice()))
                         .addPlaceholder("time", formattedTime)
                         .build();
 
@@ -148,7 +148,7 @@ public class PersonalAuctionsMenu extends OriMenu {
             this.put("#1", "Auction Lore Settings");
             this.put("auction-lore", List.of(
                     " &8------ #00B4DB&lSelling Item &8------",
-                    " &f| &7Price: &f$%price%",
+                    " &f| &7Price: &f%price%",
                     " &f| &7Time: &f%time%",
                     " &f|",
                     " &f| &7Click to cancel & claim."

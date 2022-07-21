@@ -151,7 +151,7 @@ public class AuctionManager extends Manager {
                 VaultHook.getEconomy().withdrawPlayer(player, listPrice);
             }
 
-            locale.sendMessage(player, "command-sell-success", StringPlaceholders.single("price", String.format("%.2f", price)));
+            locale.sendMessage(player, "command-sell-success", StringPlaceholders.single("price", PluginUtils.formatCurrency(price)));
         });
     }
 
@@ -191,7 +191,7 @@ public class AuctionManager extends Manager {
         double playerBalance = VaultHook.getEconomy().getBalance(player);
 
         if (buyPrice > playerBalance) {
-            locale.sendMessage(player, "invalid-funds", StringPlaceholders.builder().addPlaceholder("price", String.format("%.2f", buyPrice)).build());
+            locale.sendMessage(player, "invalid-funds", StringPlaceholders.builder().addPlaceholder("price", PluginUtils.formatCurrency(buyPrice)).build());
             return;
         }
 
@@ -220,7 +220,7 @@ public class AuctionManager extends Manager {
             VaultHook.getEconomy().depositPlayer(seller, finalBuyPrice);
 
             final StringPlaceholders placeholders = StringPlaceholders.builder()
-                    .addPlaceholder("price", String.format("%.2f", auction.getPrice()))
+                    .addPlaceholder("price", PluginUtils.formatCurrency(auction.getPrice()))
                     .addPlaceholder("seller", seller.getName())
                     .addPlaceholder("buyer", player.getName())
                     .build();
@@ -286,7 +286,7 @@ public class AuctionManager extends Manager {
         }
 
         final StringPlaceholders placeholders = StringPlaceholders.builder()
-                .addPlaceholder("amount", String.format("%.2f", profits.getProfit()))
+                .addPlaceholder("amount", PluginUtils.formatCurrency(profits.getProfit()))
                 .addPlaceholder("total", profits.getSold())
                 .build();
 

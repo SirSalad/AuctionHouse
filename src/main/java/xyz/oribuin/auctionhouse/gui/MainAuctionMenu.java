@@ -19,6 +19,7 @@ import xyz.oribuin.auctionhouse.util.ItemBuilder;
 import xyz.oribuin.auctionhouse.util.PluginUtils;
 import xyz.oribuin.auctionhouse.util.SortOption;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -129,7 +130,7 @@ public class MainAuctionMenu extends OriMenu {
                 final String formattedTime = timeLeft.equals("0") ? "Expired" : timeLeft;
 
                 final StringPlaceholders auctionPls = StringPlaceholders.builder()
-                        .addPlaceholder("price", String.format("%.2f", value.getPrice()))
+                        .addPlaceholder("price", PluginUtils.formatCurrency(value.getPrice()))
                         .addPlaceholder("seller", Bukkit.getOfflinePlayer(value.getSeller()).getName())
                         .addPlaceholder("time", formattedTime)
                         .build();
@@ -207,7 +208,7 @@ public class MainAuctionMenu extends OriMenu {
             this.put("#1", "Auction Lore Settings");
             this.put("auction-lore", List.of(
                     " &8------ #00B4DB&lSelling Item &8------",
-                    " &f| &7Price: &f$%price%",
+                    " &f| &7Price: &f%price%",
                     " &f| &7Time: &f%time%",
                     " &f| &7Seller: &f%seller%",
                     " &f|",
@@ -216,7 +217,7 @@ public class MainAuctionMenu extends OriMenu {
 
             this.put("admin-auction-lore", List.of(
                     " &8------ #00B4DB&lSelling Item &8------",
-                    " &f| &7Price: &f$%price%",
+                    " &f| &7Price: &f%price%",
                     " &f| &7Time: &f%time%",
                     " &f| &7Seller: &f%seller%",
                     " &f|",

@@ -61,7 +61,7 @@ public class EnglishLocale implements Locale {
 
             this.put("#7", "General Auction Messages");
             this.put("offline-profits", "You have earned #00B4DB$%amount%&f from #00B4DB%total%&f auctions while offline.");
-            this.put("auction-sold", "Your auction has been bought for #00B4DB$%price%&f by #00B4DB%buyer%&f!");
+            this.put("auction-sold", "Your auction has been bought for #00B4DB%price%&f by #00B4DB%buyer%&f!");
         }};
     }
 }
